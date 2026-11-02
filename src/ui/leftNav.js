@@ -1,11 +1,13 @@
 /**
- * Left Navigation Sidebar, Camera Presets, and Atmosphere Controls.
+ * Left Navigation Sidebar, Camera Presets, Heatmap Mode, Quality Selector, and Atmosphere Controls.
  */
 import { store } from '../state/store.js';
 import { applyCameraPreset } from '../controls/cameraRig.js';
 import { update3DCityFromState } from '../world/buildings.js';
 import { applyWeatherAndLighting } from '../world/weather.js';
+import { syncQualitySettings } from '../world/postfx.js';
 import { syncBottomTabButtons } from './bottomPanel.js';
+import { showToast } from './toasts.js';
 
 export function switchLeftNavView(viewKey) {
   const live = store.getLiveState();
@@ -60,9 +62,35 @@ export function initLeftNavEvents() {
     update3DCityFromState(store.getViewState());
   });
 
+  const heatmapBtn = document.getElementById('heatmap-toggle-btn');
+  if (heatmapBtn) {
+    heatmapBtn.addEventListener('click', () => {
+      const live = store.getLiveState();
+      live.heatmapMode = !live.heatmapMode;
+      heatmapBtn.classList.toggle('active', live.heatmapMode);
+      heatmapBtn.textContent = live.heatmapMode ? '🔥 Sector Heatmap: On' : '🔥 Sector Heatmap: Off';
+      update3DCityFromState(store.getViewState());
+      showToast(
+        live.heatmapMode
+          ? 'Sector-Performance Heatmap enabled on district plazas.'
+          : 'Sector-Performance Heatmap disabled.'
+      );
+    });
+  }
+
   document.getElementById('weather-select').addEventListener('change', e => {
     const live = store.getLiveState();
     live.weather = e.target.value;
     applyWeatherAndLighting(store.getViewState());
   });
+
+  const qualitySel = document.getElementById('quality-select');
+  if (qualitySel) {
+    qualitySel.addEventListener('change', e => {
+      const choice = e.target.value;
+      syncQualitySettings(choice);
+      const resolved = store.getLiveState().resolvedQuality;
+      showToast(`Graphics quality set to ${choice} (Resolved: ${resolved}).`);
+    });
+  }
 }

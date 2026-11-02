@@ -5,16 +5,16 @@ import { store } from './state/store.js';
 import { initDataset, stepMarketSimulation } from './engine/simulation.js';
 import { initScene } from './world/scene.js';
 import { buildLighting } from './world/lighting.js';
-import { buildGroundAndRoadNetwork } from './world/ground.js';
-import { buildCentralExchangeComplex } from './world/exchange.js';
+import { buildGroundAndRoadNetwork, updateCanalWater } from './world/ground.js';
+import { buildCentralExchangeComplex, animateExchangeComplex } from './world/exchange.js';
 import { buildSectorDistricts } from './world/districts.js';
 import { buildCompanyBuildings, update3DCityFromState, updateBuildingPulses } from './world/buildings.js';
-import { buildInfrastructureDistrict } from './world/infrastructure.js';
-import { buildLearningDistrict } from './world/learning.js';
-import { buildInstancedProps } from './world/instancing.js';
+import { buildInfrastructureDistrict, animateInfrastructure } from './world/infrastructure.js';
+import { buildLearningDistrict, animateLearningLandmarks } from './world/learning.js';
+import { buildInstancedProps, animateInstancedProps } from './world/instancing.js';
 import { buildTraffic, updateTraffic } from './world/traffic.js';
 import { buildRainParticles, updateRainParticles } from './world/weather.js';
-import { renderFrame } from './world/postfx.js';
+import { initPostFX, renderFrame } from './world/postfx.js';
 import { setLabelSelectHandler, updateWorldLabelsProjection } from './world/labels.js';
 import { updateCameraImmediate, updateCameraRig } from './controls/cameraRig.js';
 import { selectWorldObject } from './controls/picking.js';
@@ -32,7 +32,7 @@ function boot() {
   initDataset();
   initDynamicCountLabels(store.getViewState().companies);
 
-  // 2. Initialize 3D Scene & City World (with graceful WebGL fallback)
+  // 2. Initialize 3D Scene, Post-Processing & City World (with graceful WebGL fallback)
   setLabelSelectHandler(selectWorldObject);
   initScene();
   buildLighting();
@@ -45,6 +45,7 @@ function boot() {
   buildInstancedProps();
   buildTraffic();
   buildRainParticles();
+  initPostFX();
 
   update3DCityFromState(store.getViewState());
   updateCameraImmediate();
@@ -97,11 +98,13 @@ function boot() {
     requestAnimationFrame(animate);
 
     const dt = Math.min(0.1, (now - lastFrameTime) / 1000);
+    const nowSec = now * 0.001;
     lastFrameTime = now;
 
     if (document.hidden) return;
 
     const liveState = store.getLiveState();
+    const viewState = store.getViewState();
 
     // Advance live simulation every 2.6s at 1x speed when running in Live mode
     if (liveState.simRunning && liveState.dataMode === 'SIMULATION' && liveState.replayIndex === -1) {
@@ -113,7 +116,12 @@ function boot() {
     }
 
     updateCameraRig(dt);
-    updateBuildingPulses(liveState.companies, dt);
+    updateBuildingPulses(viewState.companies, dt, viewState);
+    animateExchangeComplex(dt, liveState.reducedMotion);
+    animateInfrastructure(dt, liveState.reducedMotion);
+    animateLearningLandmarks(nowSec, dt, liveState.reducedMotion);
+    animateInstancedProps(nowSec, liveState.reducedMotion);
+    updateCanalWater(dt, liveState.reducedMotion);
     updateTraffic(dt, liveState.reducedMotion);
     updateRainParticles(dt, liveState.reducedMotion);
 
@@ -123,5 +131,4 @@ function boot() {
 
   requestAnimationFrame(animate);
 }
-
 window.addEventListener('DOMContentLoaded', boot);

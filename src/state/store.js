@@ -71,11 +71,14 @@ class Store {
       replayIndex: -1,   // -1 means Live
       replayViewState: null, // Populated when replayIndex !== -1
 
-      // 3D Environment Settings
+      // 3D Environment & Quality Settings
       labelsVisible: true,
+      heatmapMode: false,
       weather: 'CLEAR',
       isNight: false,
-      reducedMotion: false
+      reducedMotion: false,
+      graphicsQuality: 'AUTO', // 'AUTO' | 'HIGH' | 'MEDIUM' | 'LOW'
+      resolvedQuality: 'HIGH'  // 'HIGH' | 'MEDIUM' | 'LOW'
     };
   }
 
@@ -112,7 +115,7 @@ class Store {
   /**
    * Subscribe to one or more granular event channels.
    * Channels: 'tick', 'selection', 'nav', 'bottomTab', 'settings', 'replay',
-   * 'event', 'watchlist', 'portfolio', 'compare', 'alerts', 'whatif', 'filter'
+   * 'event', 'watchlist', 'portfolio', 'compare', 'alerts', 'whatif', 'filter', 'quality'
    */
   subscribe(eventOrEvents, callback) {
     const events = Array.isArray(eventOrEvents) ? eventOrEvents : [eventOrEvents];

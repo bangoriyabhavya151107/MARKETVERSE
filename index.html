@@ -98,17 +98,24 @@
     </div>
 
     <div style="border-top:1px solid var(--border-subtle); padding-top:8px;">
-      <div class="nav-section-title">Atmosphere & Time</div>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-bottom:6px;">
+      <div class="nav-section-title">Atmosphere & City Render</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-bottom:5px;">
         <button id="day-night-btn" title="Visual lighting toggle (does not indicate exchange hours)">☀️ Day</button>
         <button id="labels-toggle-btn" class="active" title="Toggle 3D City Ticker Labels">🏷️ Labels</button>
       </div>
-      <select id="weather-select" style="width:100%;" aria-label="City Weather Atmosphere">
+      <button id="heatmap-toggle-btn" style="width:100%; margin-bottom:5px; font-size:11.5px;" title="Tint district plazas by cap-weighted sector performance">🔥 Sector Heatmap: Off</button>
+      <select id="weather-select" style="width:100%; margin-bottom:5px;" aria-label="City Weather Atmosphere">
         <option value="CLEAR">Weather: Clear Day</option>
         <option value="CLOUDY">Weather: Cloudy</option>
         <option value="RAIN">Weather: Light Rain</option>
         <option value="EVENING">Atmosphere: Evening</option>
         <option value="NIGHT">Atmosphere: Night</option>
+      </select>
+      <select id="quality-select" style="width:100%;" aria-label="Graphics Quality Setting" title="3D Render & Post-Processing Quality">
+        <option value="AUTO" selected>Quality: Auto-Detect</option>
+        <option value="HIGH">Quality: High (Bloom + Shadows)</option>
+        <option value="MEDIUM">Quality: Medium</option>
+        <option value="LOW">Quality: Low (Battery Saver)</option>
       </select>
     </div>
   </nav>

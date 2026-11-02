@@ -4,6 +4,8 @@
 import { FINANCIAL_LESSONS } from '../data/lessons.js';
 import { store } from '../state/store.js';
 import { checkEducationalAlerts } from '../engine/alerts.js';
+import { syncQualitySettings } from '../world/postfx.js';
+import { update3DCityFromState } from '../world/buildings.js';
 
 export function openConceptModal(conceptKey) {
   const les = FINANCIAL_LESSONS[conceptKey];
@@ -106,13 +108,26 @@ export function openAlertsModal() {
 
 export function openSettingsModal() {
   const viewState = store.getViewState();
-  document.getElementById('modal-title').textContent = 'Environment, Theme & Accessibility Settings';
+  document.getElementById('modal-title').textContent = 'Environment, Render Quality & Accessibility Settings';
   const body = document.getElementById('modal-body');
 
   body.innerHTML = `
     <div class="section-card">
-      <h4>Visual & Accessibility Controls</h4>
+      <h4>Visual, Render Quality & Accessibility Controls</h4>
       <div style="display:flex; flex-direction:column; gap:10px; margin-top:8px;">
+        <label style="display:flex; justify-content:space-between; align-items:center;">
+          <span>3D Graphics Quality (Active: <strong>${viewState.resolvedQuality}</strong>)</span>
+          <select id="modal-quality-select">
+            <option value="AUTO" ${viewState.graphicsQuality === 'AUTO' ? 'selected' : ''}>Auto-Detect</option>
+            <option value="HIGH" ${viewState.graphicsQuality === 'HIGH' ? 'selected' : ''}>High (Bloom + Soft Shadows)</option>
+            <option value="MEDIUM" ${viewState.graphicsQuality === 'MEDIUM' ? 'selected' : ''}>Medium</option>
+            <option value="LOW" ${viewState.graphicsQuality === 'LOW' ? 'selected' : ''}>Low (Battery Saver)</option>
+          </select>
+        </label>
+        <label style="display:flex; justify-content:space-between; align-items:center;">
+          <span>Sector-Performance Ground Heatmap</span>
+          <input type="checkbox" id="modal-heatmap-checkbox" ${viewState.heatmapMode ? 'checked' : ''} />
+        </label>
         <label style="display:flex; justify-content:space-between; align-items:center;">
           <span>Interface Theme (Dark Navy vs. High-Contrast Daylight)</span>
           <button id="toggle-theme-modal-btn">Toggle UI Theme</button>
@@ -127,6 +142,25 @@ export function openSettingsModal() {
       <strong>Accessibility Note:</strong> Positive and negative movements in MarketVerse always include explicit directional symbols (▲ +, ▼ -, •) alongside green/red/amber colors.
     </div>
   `;
+
+  body.querySelector('#modal-quality-select').addEventListener('change', e => {
+    const val = e.target.value;
+    syncQualitySettings(val);
+    const navSel = document.getElementById('quality-select');
+    if (navSel) navSel.value = val;
+    openSettingsModal();
+  });
+
+  body.querySelector('#modal-heatmap-checkbox').addEventListener('change', e => {
+    const live = store.getLiveState();
+    live.heatmapMode = e.target.checked;
+    const navBtn = document.getElementById('heatmap-toggle-btn');
+    if (navBtn) {
+      navBtn.classList.toggle('active', live.heatmapMode);
+      navBtn.textContent = live.heatmapMode ? '🔥 Sector Heatmap: On' : '🔥 Sector Heatmap: Off';
+    }
+    update3DCityFromState(store.getViewState());
+  });
 
   body.querySelector('#toggle-theme-modal-btn').addEventListener('click', () => {
     document.body.classList.toggle('light-ui');

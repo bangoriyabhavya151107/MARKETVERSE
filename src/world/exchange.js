@@ -1,11 +1,40 @@
 /**
- * Central Stock Exchange Complex (NSE / BSE Anchor) at city center.
+ * Landmark Central Stock Exchange Complex:
+ * - Stepped Plaza & Classical Colonnade Rotunda
+ * - Ribbed Glass Dome + Central Tower
+ * - 4 Wings with Distinct Labeled Entrances
+ * - Rotating 3D Ticker-Tape Band (live CanvasTexture showing top movers)
+ * - Counter-Rotating Gyroscope Market-Status Monument
  */
 import * as THREE from 'three';
 import { scene, interactiveMeshes } from './scene.js';
 import { registerWorldLabel } from './labels.js';
 
 export let exchangeMonumentMat = null;
+let tickerBandMesh = null;
+let tickerCanvas = null;
+let tickerCtx = null;
+let tickerTexture = null;
+let outerGyroRing = null;
+let innerGyroRing = null;
+
+function createWingPortalLabel(title) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#111b26';
+  ctx.fillRect(0, 0, 256, 64);
+  ctx.strokeStyle = '#4b8be8';
+  ctx.lineWidth = 4;
+  ctx.strokeRect(2, 2, 252, 60);
+  ctx.fillStyle = '#e6f0fa';
+  ctx.font = 'bold 20px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(title, 128, 32);
+  return new THREE.CanvasTexture(canvas);
+}
 
 export function buildCentralExchangeComplex() {
   if (!scene) return;
@@ -13,6 +42,7 @@ export function buildCentralExchangeComplex() {
   const exGroup = new THREE.Group();
   exGroup.position.set(0, 0, -24);
 
+  // 1. Stepped Ceremonial Plaza Base
   const plazaGeo = new THREE.BoxGeometry(68, 0.6, 50);
   const plazaMat = new THREE.MeshLambertMaterial({ color: 0x22313f });
   const plaza = new THREE.Mesh(plazaGeo, plazaMat);
@@ -20,52 +50,144 @@ export function buildCentralExchangeComplex() {
   plaza.receiveShadow = true;
   exGroup.add(plaza);
 
-  const podiumGeo = new THREE.CylinderGeometry(14, 15.5, 6, 24);
+  const innerSteps = new THREE.Mesh(
+    new THREE.CylinderGeometry(17.5, 19, 1.2, 32),
+    new THREE.MeshLambertMaterial({ color: 0x2a3d4f })
+  );
+  innerSteps.position.y = 0.9;
+  innerSteps.receiveShadow = true;
+  exGroup.add(innerSteps);
+
+  // 2. Rotunda Podium + Perimeter Colonnade Pillars
+  const podiumGeo = new THREE.CylinderGeometry(14, 15.2, 6.5, 24);
   const podiumMat = new THREE.MeshPhongMaterial({ color: 0x2f4356, shininess: 40 });
   const podium = new THREE.Mesh(podiumGeo, podiumMat);
-  podium.position.set(0, 3.6, 0);
+  podium.position.set(0, 4.2, 0);
   podium.castShadow = true;
   exGroup.add(podium);
 
-  const towerGeo = new THREE.CylinderGeometry(9.5, 11, 30, 16);
-  const towerMat = new THREE.MeshPhongMaterial({ color: 0x3b5875, shininess: 70 });
+  const colMat = new THREE.MeshLambertMaterial({ color: 0x99afc4 });
+  const colGeo = new THREE.CylinderGeometry(0.45, 0.5, 6.4, 8);
+  for (let i = 0; i < 16; i++) {
+    const angle = (i / 16) * Math.PI * 2;
+    const col = new THREE.Mesh(colGeo, colMat);
+    col.position.set(Math.cos(angle) * 15.8, 4.2, Math.sin(angle) * 15.8);
+    exGroup.add(col);
+  }
+
+  // 3. Translucent Ribbed Glass Dome over Rotunda
+  const domeGeo = new THREE.SphereGeometry(13.6, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2);
+  const domeMat = new THREE.MeshPhongMaterial({
+    color: 0x5ea2f0,
+    transparent: true,
+    opacity: 0.42,
+    shininess: 95
+  });
+  const dome = new THREE.Mesh(domeGeo, domeMat);
+  dome.position.y = 7.4;
+  exGroup.add(dome);
+
+  // 4. Prominent Exchange Headquarters Tower
+  const towerGeo = new THREE.CylinderGeometry(8.8, 10.6, 28, 16);
+  const towerMat = new THREE.MeshPhongMaterial({ color: 0x3b5875, shininess: 75 });
   const mainTower = new THREE.Mesh(towerGeo, towerMat);
-  mainTower.position.set(0, 21, 0);
+  mainTower.position.set(0, 21.5, 0);
   mainTower.castShadow = true;
   exGroup.add(mainTower);
 
-  const ringGeo = new THREE.CylinderGeometry(10.4, 10.4, 2.6, 24);
+  // 5. Rotating 3D Ticker-Tape Band wrapping the Tower
+  tickerCanvas = document.createElement('canvas');
+  tickerCanvas.width = 1024;
+  tickerCanvas.height = 96;
+  tickerCtx = tickerCanvas.getContext('2d');
+  tickerTexture = new THREE.CanvasTexture(tickerCanvas);
+  tickerTexture.wrapS = THREE.RepeatWrapping;
+  tickerTexture.wrapT = THREE.ClampToEdgeWrapping;
+
+  const tickerGeo = new THREE.CylinderGeometry(10.5, 10.5, 2.8, 32, 1, true);
+  const tickerMat = new THREE.MeshBasicMaterial({
+    map: tickerTexture,
+    side: THREE.DoubleSide
+  });
+  tickerBandMesh = new THREE.Mesh(tickerGeo, tickerMat);
+  tickerBandMesh.position.set(0, 18.5, 0);
+  exGroup.add(tickerBandMesh);
+
+  // 6. Market-Status Monument (Orb + Counter-Rotating Gyroscope Rings)
   exchangeMonumentMat = new THREE.MeshBasicMaterial({ color: 0x22a06b });
-  const ringMesh = new THREE.Mesh(ringGeo, exchangeMonumentMat);
-  ringMesh.position.set(0, 34, 0);
-  exGroup.add(ringMesh);
 
-  const spire = new THREE.Mesh(
-    new THREE.ConeGeometry(1.2, 10, 8),
-    new THREE.MeshBasicMaterial({ color: 0x9ec5ff })
+  const coreOrb = new THREE.Mesh(new THREE.OctahedronGeometry(2.6, 1), exchangeMonumentMat);
+  coreOrb.position.set(0, 39.5, 0);
+  exGroup.add(coreOrb);
+
+  outerGyroRing = new THREE.Mesh(
+    new THREE.TorusGeometry(4.6, 0.35, 8, 28),
+    exchangeMonumentMat
   );
-  spire.position.set(0, 41, 0);
-  exGroup.add(spire);
+  outerGyroRing.position.set(0, 39.5, 0);
+  exGroup.add(outerGyroRing);
 
+  innerGyroRing = new THREE.Mesh(
+    new THREE.TorusGeometry(3.5, 0.28, 8, 24),
+    exchangeMonumentMat
+  );
+  innerGyroRing.position.set(0, 39.5, 0);
+  innerGyroRing.rotation.y = Math.PI / 2;
+  exGroup.add(innerGyroRing);
+
+  const crownBand = new THREE.Mesh(
+    new THREE.CylinderGeometry(9.6, 9.6, 1.8, 24),
+    exchangeMonumentMat
+  );
+  crownBand.position.set(0, 34.5, 0);
+  exGroup.add(crownBand);
+
+  // 7. Four Distinct Wings with Entrance Portals & Signage
   const wingSpecs = [
-    { x: -18, z: -10 },
-    { x: 18, z: -10 },
-    { x: -18, z: 10 },
-    { x: 18, z: 10 }
+    { x: -19, z: -11, label: 'ORDER MATCHING' },
+    { x: 19, z: -11, label: 'CLEARING LINK' },
+    { x: -19, z: 11, label: 'SETTLEMENT' },
+    { x: 19, z: 11, label: 'MARKET-DATA' }
   ];
   const wingMat = new THREE.MeshLambertMaterial({ color: 0x2b3e50 });
+  const portalMat = new THREE.MeshBasicMaterial({ color: 0x4b8be8 });
+
   wingSpecs.forEach(w => {
-    const wing = new THREE.Mesh(new THREE.BoxGeometry(10, 12, 10), wingMat);
-    wing.position.set(w.x, 6.6, w.z);
+    const wGroup = new THREE.Group();
+    wGroup.position.set(w.x, 0, w.z);
+
+    const wing = new THREE.Mesh(new THREE.BoxGeometry(11, 11.5, 11), wingMat);
+    wing.position.y = 6.2;
     wing.castShadow = true;
-    exGroup.add(wing);
+    wGroup.add(wing);
+
+    // Glowing entrance portal arch on outward face
+    const zSign = w.z > 0 ? 5.65 : -5.65;
+    const portalFrame = new THREE.Mesh(new THREE.BoxGeometry(5.2, 4.2, 0.3), portalMat);
+    portalFrame.position.set(0, 2.6, zSign);
+    wGroup.add(portalFrame);
+
+    const signMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(7.5, 1.8),
+      new THREE.MeshBasicMaterial({ map: createWingPortalLabel(w.label), side: THREE.DoubleSide })
+    );
+    signMesh.position.set(0, 9.8, zSign);
+    if (w.z < 0) signMesh.rotation.y = Math.PI;
+    wGroup.add(signMesh);
+
+    exGroup.add(wGroup);
   });
 
-  const hitGeo = new THREE.BoxGeometry(52, 42, 38);
+  // 8. Generous Raycast Hitbox
+  const hitGeo = new THREE.BoxGeometry(54, 45, 40);
   const hitMat = new THREE.MeshBasicMaterial({ visible: false });
   const hitMesh = new THREE.Mesh(hitGeo, hitMat);
-  hitMesh.position.set(0, 21, 0);
-  hitMesh.userData = { type: 'EXCHANGE', id: 'CENTRAL_EXCHANGE', name: 'Central Stock Exchange Complex (NSE / BSE Anchor)' };
+  hitMesh.position.set(0, 22, 0);
+  hitMesh.userData = {
+    type: 'EXCHANGE',
+    id: 'CENTRAL_EXCHANGE',
+    name: 'Central Stock Exchange Complex (NSE / BSE Anchor)'
+  };
   exGroup.add(hitMesh);
   interactiveMeshes.push(hitMesh);
 
@@ -80,9 +202,60 @@ export function buildCentralExchangeComplex() {
   });
 }
 
-export function updateExchangeMonumentMood(mood) {
-  if (!exchangeMonumentMat) return;
-  if (mood === 'BULLISH') exchangeMonumentMat.color.setHex(0x22a06b);
-  else if (mood === 'BEARISH') exchangeMonumentMat.color.setHex(0xd94f52);
-  else exchangeMonumentMat.color.setHex(0xd6a84f);
+export function updateExchangeMonumentAndTicker(viewState) {
+  if (exchangeMonumentMat) {
+    const mood = viewState.totals.mood;
+    if (mood === 'BULLISH') exchangeMonumentMat.color.setHex(0x22a06b);
+    else if (mood === 'BEARISH') exchangeMonumentMat.color.setHex(0xd94f52);
+    else exchangeMonumentMat.color.setHex(0xd6a84f);
+  }
+
+  if (!tickerCtx || !tickerTexture || !viewState.companies.length) return;
+
+  tickerCtx.fillStyle = '#0c141d';
+  tickerCtx.fillRect(0, 0, 1024, 96);
+
+  tickerCtx.strokeStyle = '#3b5875';
+  tickerCtx.lineWidth = 4;
+  tickerCtx.strokeRect(0, 2, 1024, 92);
+
+  // Pick top 6 absolute movers to display on the 3D ticker band
+  const movers = [...viewState.companies]
+    .sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
+    .slice(0, 6);
+
+  tickerCtx.font = 'bold 26px "SFMono-Regular", Consolas, monospace';
+  tickerCtx.textBaseline = 'middle';
+
+  let xCursor = 24;
+  movers.forEach(c => {
+    const isPos = c.changePercent >= 0;
+    const arrow = isPos ? '▲' : '▼';
+    const pctStr = `${arrow}${Math.abs(c.changePercent).toFixed(1)}%`;
+
+    tickerCtx.fillStyle = '#f2f5f7';
+    tickerCtx.fillText(c.symbol, xCursor, 48);
+    xCursor += tickerCtx.measureText(c.symbol).width + 10;
+
+    tickerCtx.fillStyle = isPos ? '#22a06b' : '#d94f52';
+    tickerCtx.fillText(pctStr, xCursor, 48);
+    xCursor += tickerCtx.measureText(pctStr).width + 36;
+  });
+
+  tickerTexture.needsUpdate = true;
+}
+
+export function animateExchangeComplex(dt, reducedMotion) {
+  if (reducedMotion) return;
+  if (tickerBandMesh) {
+    tickerBandMesh.rotation.y += dt * 0.38;
+  }
+  if (outerGyroRing) {
+    outerGyroRing.rotation.y += dt * 0.85;
+    outerGyroRing.rotation.x += dt * 0.35;
+  }
+  if (innerGyroRing) {
+    innerGyroRing.rotation.z -= dt * 1.1;
+    innerGyroRing.rotation.y -= dt * 0.5;
+  }
 }
