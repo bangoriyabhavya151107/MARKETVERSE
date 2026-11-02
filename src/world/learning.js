@@ -1,9 +1,10 @@
 /**
- * 6 Investor Learning District Landmarks — Physical 3D Demonstrations.
+ * 6 Investor Learning District Landmarks — Physical 3D Demonstrations with Soft Contact Shadows.
  */
 import * as THREE from 'three';
 import { scene, interactiveMeshes } from './scene.js';
 import { LEARNING_LANDMARKS } from '../data/landmarks.js';
+import { createContactShadowMesh } from './lighting.js';
 import { registerWorldLabel } from './labels.js';
 
 let pvvPriceBar = null;
@@ -28,14 +29,17 @@ export function buildLearningDistrict() {
     const g = new THREE.Group();
     g.position.set(lm.pos.x, 0.5, lm.pos.z);
 
-    // Base Pedestal
+    // Soft AO Contact Shadow Decal
+    const lmAo = createContactShadowMesh(14, 14, 0.6);
+    lmAo.position.y = 0.03;
+    g.add(lmAo);
+
     const ped = new THREE.Mesh(new THREE.BoxGeometry(9.5, 1.4, 9.5), pedMat);
     ped.position.y = 0.7;
     ped.receiveShadow = true;
     g.add(ped);
 
     if (lm.id === 'LEARN_MCAP') {
-      // 1. Market-Cap Monument: Two towers comparing ₹400 × 500 Cr sh (Tall/Wide) vs ₹4,000 × 10 Cr sh (Short/Thin)
       const towerLarge = new THREE.Mesh(
         new THREE.BoxGeometry(3.2, 9.5, 3.2),
         new THREE.MeshPhongMaterial({ color: 0x4b8be8, shininess: 65 })
@@ -52,7 +56,6 @@ export function buildLearningDistrict() {
       towerSmall.castShadow = true;
       g.add(towerSmall);
     } else if (lm.id === 'LEARN_PVV') {
-      // 2. Price vs Volume Demonstration: Paired animated Price bar & Volume bar
       const pGeo = new THREE.BoxGeometry(2.2, 1, 2.2);
       pGeo.translate(0, 0.5, 0);
       pvvPriceBar = new THREE.Mesh(
@@ -73,14 +76,13 @@ export function buildLearningDistrict() {
       pvvVolumeBar.scale.y = 5.0;
       g.add(pvvVolumeBar);
     } else if (lm.id === 'LEARN_BULLBEAR') {
-      // 3. Bull vs Bear Sculpture: Charging emerald Bull vs downward-angled crimson Bear
       const bullGroup = new THREE.Group();
       bullGroup.position.set(-2.1, 2.6, 0);
       const bullBody = new THREE.Mesh(
         new THREE.BoxGeometry(2.8, 1.6, 1.5),
         new THREE.MeshPhongMaterial({ color: 0x22a06b, shininess: 75 })
       );
-      bullBody.rotation.z = 0.28; // Charging upward
+      bullBody.rotation.z = 0.28;
       const hornL = new THREE.Mesh(new THREE.ConeGeometry(0.2, 1.2, 5), new THREE.MeshBasicMaterial({ color: 0xffe7a3 }));
       hornL.position.set(1.3, 1.1, 0.45);
       hornL.rotation.z = -0.5;
@@ -95,11 +97,10 @@ export function buildLearningDistrict() {
         new THREE.BoxGeometry(2.6, 1.8, 1.7),
         new THREE.MeshPhongMaterial({ color: 0xd94f52, shininess: 75 })
       );
-      bearBody.rotation.z = -0.25; // Pressing downward
+      bearBody.rotation.z = -0.25;
       bearGroup.add(bearBody);
       g.add(bearGroup);
     } else if (lm.id === 'LEARN_DIVERSIFY') {
-      // 4. Diversified Portfolio Garden: Multi-species colorful grove vs uniform monoculture patch
       const colors = [0x22a06b, 0x4b8be8, 0xd6a84f, 0xb58ae0];
       colors.forEach((col, i) => {
         const crown = new THREE.Mesh(
@@ -110,7 +111,6 @@ export function buildLearningDistrict() {
         g.add(crown);
       });
 
-      // Uniform monoculture patch on right side
       for (let i = 0; i < 3; i++) {
         const mono = new THREE.Mesh(
           new THREE.ConeGeometry(0.75, 2.2, 5),
@@ -120,7 +120,6 @@ export function buildLearningDistrict() {
         g.add(mono);
       }
     } else if (lm.id === 'LEARN_RISK') {
-      // 5. Risk-and-Return Observation Tower: Tall needle with wind-swaying upper section
       const lowerBase = new THREE.Mesh(
         new THREE.CylinderGeometry(1.2, 1.8, 4.5, 8),
         new THREE.MeshPhongMaterial({ color: 0x3b5875 })
@@ -147,7 +146,6 @@ export function buildLearningDistrict() {
 
       g.add(riskSwaySpire);
     } else if (lm.id === 'LEARN_INDEX') {
-      // 6. Market-Index Information Plaza: Rotating ring carrying a basket of 6 mini-buildings
       indexBasketGroup = new THREE.Group();
       indexBasketGroup.position.y = 1.6;
 
@@ -173,7 +171,6 @@ export function buildLearningDistrict() {
       g.add(indexBasketGroup);
     }
 
-    // Generous Hitbox
     const hit = new THREE.Mesh(
       new THREE.BoxGeometry(10.5, 14, 10.5),
       new THREE.MeshBasicMaterial({ visible: false })

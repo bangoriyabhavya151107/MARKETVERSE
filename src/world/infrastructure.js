@@ -1,9 +1,11 @@
 /**
- * 7 Market Infrastructure Facilities with Unique Recognizable Architectural Silhouettes.
+ * 7 Market Infrastructure Facilities with Unique Recognizable Architectural Silhouettes
+ * and Soft Baked-Looking Contact Shadows.
  */
 import * as THREE from 'three';
 import { scene, interactiveMeshes } from './scene.js';
 import { INFRA_FACILITIES } from '../data/infrastructure.js';
+import { createContactShadowMesh } from './lighting.js';
 import { registerWorldLabel } from './labels.js';
 
 let riskRadarBar = null;
@@ -26,10 +28,14 @@ export function buildInfrastructureDistrict() {
     const g = new THREE.Group();
     g.position.set(fac.pos.x, 0.5, fac.pos.z);
 
+    // Soft AO Contact Shadow Decal
+    const facAo = createContactShadowMesh(fac.size.w * 1.55, fac.size.d * 1.55, 0.62);
+    facAo.position.y = 0.03;
+    g.add(facAo);
+
     const mainMat = new THREE.MeshPhongMaterial({ color: fac.color, shininess: 48 });
 
     if (fac.id === 'INFRA_DATA') {
-      // 1. Market-Data Broadcast Center: Stepped facility + 3 parabolic satellite dishes
       const base = new THREE.Mesh(new THREE.BoxGeometry(11, 9, 11), mainMat);
       base.position.y = 4.5;
       base.castShadow = true;
@@ -42,11 +48,10 @@ export function buildInfrastructureDistrict() {
         );
         dish.rotation.x = Math.PI - 0.45;
         dish.rotation.z = (i - 1) * 0.3;
-        dish.position.set(dx, 10.5, (i % 2 === 0 ? -1.5 : 1.5));
+        dish.position.set(dx, 10.5, i % 2 === 0 ? -1.5 : 1.5);
         g.add(dish);
       });
     } else if (fac.id === 'INFRA_CLEARING') {
-      // 2. Clearing Corp (CCP): Server hall with glowing vertical server rack columns
       const core = new THREE.Mesh(new THREE.BoxGeometry(11.5, 13, 10.5), darkMetalMat);
       core.position.y = 6.5;
       core.castShadow = true;
@@ -59,7 +64,6 @@ export function buildInfrastructureDistrict() {
         g.add(rack);
       }
     } else if (fac.id === 'INFRA_DEPOSITORY') {
-      // 3. Central Securities Depository: Fortified bullion vault block + circular vault door
       const vault = new THREE.Mesh(new THREE.BoxGeometry(12, 14, 11), mainMat);
       vault.position.y = 7.0;
       vault.castShadow = true;
@@ -75,7 +79,6 @@ export function buildInfrastructureDistrict() {
       doorCore.position.set(0, 7.0, -5.6);
       g.add(doorCore);
     } else if (fac.id === 'INFRA_BROKERAGE') {
-      // 4. Brokerage Hub: Multi-tier concourse with ribbon windows
       for (let tier = 0; tier < 3; tier++) {
         const w = 11 - tier * 1.8;
         const block = new THREE.Mesh(new THREE.BoxGeometry(w, 4.2, w), mainMat);
@@ -84,7 +87,6 @@ export function buildInfrastructureDistrict() {
         g.add(block);
       }
     } else if (fac.id === 'INFRA_RISK') {
-      // 5. Risk Surveillance: Base + Octagonal Watchtower + Rotating Radar Bar
       const base = new THREE.Mesh(new THREE.BoxGeometry(11, 7, 11), darkMetalMat);
       base.position.y = 3.5;
       g.add(base);
@@ -98,7 +100,6 @@ export function buildInfrastructureDistrict() {
       riskRadarBar.position.y = 16.8;
       g.add(riskRadarBar);
     } else if (fac.id === 'INFRA_NEWS') {
-      // 6. Disclosures & News Hub: Media press building + wrap-around ticker band + broadcast mast
       const press = new THREE.Mesh(new THREE.BoxGeometry(10, 11, 10), mainMat);
       press.position.y = 5.5;
       press.castShadow = true;
@@ -115,7 +116,6 @@ export function buildInfrastructureDistrict() {
       mast.position.y = 13.5;
       g.add(mast);
     } else {
-      // 7. Investor-Information Center: Civic pavilion with colonnade & domed skylight
       const pav = new THREE.Mesh(new THREE.BoxGeometry(14, 7.5, 9), mainMat);
       pav.position.y = 3.75;
       pav.castShadow = true;
@@ -129,7 +129,6 @@ export function buildInfrastructureDistrict() {
       g.add(dome);
     }
 
-    // Generous Hitbox for Raycaster
     const hit = new THREE.Mesh(
       new THREE.BoxGeometry(fac.size.w + 2, fac.size.h + 5, fac.size.d + 2),
       new THREE.MeshBasicMaterial({ visible: false })

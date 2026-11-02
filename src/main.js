@@ -16,7 +16,7 @@ import { buildTraffic, updateTraffic } from './world/traffic.js';
 import { buildRainParticles, updateRainParticles } from './world/weather.js';
 import { initPostFX, renderFrame } from './world/postfx.js';
 import { setLabelSelectHandler, updateWorldLabelsProjection } from './world/labels.js';
-import { updateCameraImmediate, updateCameraRig } from './controls/cameraRig.js';
+import { camRig, updateCameraImmediate, updateCameraRig } from './controls/cameraRig.js';
 import { selectWorldObject } from './controls/picking.js';
 import { setupViewportControls } from './controls/touch.js';
 import { initTopBarEvents, updateTopBarAndSummaryCards } from './ui/topbar.js';
@@ -31,6 +31,15 @@ function boot() {
   store.loadPersistedState();
   initDataset();
   initDynamicCountLabels(store.getViewState().companies);
+
+  // Listen to OS prefers-reduced-motion changes
+  if (window.matchMedia) {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    mq.addEventListener('change', e => {
+      store.getLiveState().reducedMotion = e.matches;
+      store.emit('settings');
+    });
+  }
 
   // 2. Initialize 3D Scene, Post-Processing & City World (with graceful WebGL fallback)
   setLabelSelectHandler(selectWorldObject);
@@ -123,12 +132,13 @@ function boot() {
     animateInstancedProps(nowSec, liveState.reducedMotion);
     updateCanalWater(dt, liveState.reducedMotion);
     updateTraffic(dt, liveState.reducedMotion);
-    updateRainParticles(dt, liveState.reducedMotion);
+    updateRainParticles(dt, liveState.reducedMotion, camRig.target, camRig.distance);
 
-    renderFrame();
+    renderFrame(camRig.target);
     updateWorldLabelsProjection();
   }
 
   requestAnimationFrame(animate);
 }
+
 window.addEventListener('DOMContentLoaded', boot);

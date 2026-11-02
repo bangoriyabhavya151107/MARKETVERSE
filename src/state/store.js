@@ -7,6 +7,11 @@ class Store {
   constructor() {
     this.listeners = new Map();
 
+    const prefersReduced =
+      typeof window !== 'undefined' &&
+      window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
     this.state = {
       // UI & Mode Configuration
       dataMode: 'SIMULATION', // 'SIMULATION' | 'REAL_DATA'
@@ -36,6 +41,14 @@ class Store {
       eventRemainingTicks: 0,
       eventTotalTicks: 0,
 
+      // 5-Second Visual Cue when a Hypothetical Event is Triggered
+      eventCue: {
+        id: 'NONE',
+        colorHex: 0x4b8be8,
+        timer: 0,
+        duration: 5.0
+      },
+
       // What-If Sandbox State
       whatIf: {
         companyId: 'C01',
@@ -49,8 +62,26 @@ class Store {
       // Live Simulation Financial Entities
       companies: [],
       indices: {
-        NIFTY: { name: 'NIFTY 50 (Simulated)', baseLevel: 22450.00, baseMcap: 0, current: 22450.00, change: 0, changePercent: 0, constituentCount: 0, history: [] },
-        SENSEX: { name: 'SENSEX (Simulated)', baseLevel: 73890.00, baseMcap: 0, current: 73890.00, change: 0, changePercent: 0, constituentCount: 0, history: [] }
+        NIFTY: {
+          name: 'NIFTY 50 (Simulated)',
+          baseLevel: 22450.0,
+          baseMcap: 0,
+          current: 22450.0,
+          change: 0,
+          changePercent: 0,
+          constituentCount: 0,
+          history: []
+        },
+        SENSEX: {
+          name: 'SENSEX (Simulated)',
+          baseLevel: 73890.0,
+          baseMcap: 0,
+          current: 73890.0,
+          change: 0,
+          changePercent: 0,
+          constituentCount: 0,
+          history: []
+        }
       },
       totals: {
         listedCount: 0,
@@ -68,17 +99,24 @@ class Store {
 
       // Immutable Replay Buffer & View State
       replayHistory: [], // Array of frozen snapshots
-      replayIndex: -1,   // -1 means Live
+      replayIndex: -1, // -1 means Live
       replayViewState: null, // Populated when replayIndex !== -1
 
-      // 3D Environment & Quality Settings
+      // 3D Environment, Lighting, Atmosphere & Post-Processing Settings
       labelsVisible: true,
       heatmapMode: false,
-      weather: 'CLEAR',
+      weather: 'CLEAR', // 'CLEAR' | 'CLOUDY' | 'RAIN' | 'EVENING' | 'NIGHT'
       isNight: false,
-      reducedMotion: false,
+      timeOfDay: 13.5, // Continuous 0..24 hour clock for lighting/sky (13.5 = afternoon)
+      targetTimeOfDay: 13.5,
+      autoDayNight: false,
+      atmosphereOverride: false, // false = Market-Mood drives sky tint; true = manual override
+      lightUiTheme: false, // Synced with body.light-ui to switch 3D scene palette
+      reducedMotion: Boolean(prefersReduced),
       graphicsQuality: 'AUTO', // 'AUTO' | 'HIGH' | 'MEDIUM' | 'LOW'
-      resolvedQuality: 'HIGH'  // 'HIGH' | 'MEDIUM' | 'LOW'
+      resolvedQuality: 'HIGH', // 'HIGH' | 'MEDIUM' | 'LOW'
+      postFxEnabled: true,
+      dofEnabled: true
     };
   }
 
@@ -114,8 +152,6 @@ class Store {
 
   /**
    * Subscribe to one or more granular event channels.
-   * Channels: 'tick', 'selection', 'nav', 'bottomTab', 'settings', 'replay',
-   * 'event', 'watchlist', 'portfolio', 'compare', 'alerts', 'whatif', 'filter', 'quality'
    */
   subscribe(eventOrEvents, callback) {
     const events = Array.isArray(eventOrEvents) ? eventOrEvents : [eventOrEvents];
@@ -156,9 +192,9 @@ class Store {
       this.state.portfolio = p
         ? JSON.parse(p)
         : [
-            { id: 'C01', qty: 50, avgCost: 1590.00 },
-            { id: 'C06', qty: 25, avgCost: 3780.00 },
-            { id: 'C15', qty: 40, avgCost: 1520.00 }
+            { id: 'C01', qty: 50, avgCost: 1590.0 },
+            { id: 'C06', qty: 25, avgCost: 3780.0 },
+            { id: 'C15', qty: 40, avgCost: 1520.0 }
           ];
 
       const a = localStorage.getItem('mv_alerts');

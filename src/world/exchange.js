@@ -1,16 +1,19 @@
 /**
  * Landmark Central Stock Exchange Complex:
- * - Stepped Plaza & Classical Colonnade Rotunda
- * - Ribbed Glass Dome + Central Tower
+ * - Stepped Plaza, Soft AO Contact Shadows & Classical Colonnade Rotunda
+ * - Illuminated Ribbed Glass Dome + Central Tower
  * - 4 Wings with Distinct Labeled Entrances
  * - Rotating 3D Ticker-Tape Band (live CanvasTexture showing top movers)
  * - Counter-Rotating Gyroscope Market-Status Monument
  */
 import * as THREE from 'three';
 import { scene, interactiveMeshes } from './scene.js';
+import { createContactShadowMesh } from './lighting.js';
 import { registerWorldLabel } from './labels.js';
 
 export let exchangeMonumentMat = null;
+let domeMat = null;
+let towerMat = null;
 let tickerBandMesh = null;
 let tickerCanvas = null;
 let tickerCtx = null;
@@ -41,6 +44,11 @@ export function buildCentralExchangeComplex() {
 
   const exGroup = new THREE.Group();
   exGroup.position.set(0, 0, -24);
+
+  // Soft AO Contact Shadow under Exchange Complex
+  const exAo = createContactShadowMesh(64, 48, 0.65);
+  exAo.position.y = 0.05;
+  exGroup.add(exAo);
 
   // 1. Stepped Ceremonial Plaza Base
   const plazaGeo = new THREE.BoxGeometry(68, 0.6, 50);
@@ -77,10 +85,12 @@ export function buildCentralExchangeComplex() {
 
   // 3. Translucent Ribbed Glass Dome over Rotunda
   const domeGeo = new THREE.SphereGeometry(13.6, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2);
-  const domeMat = new THREE.MeshPhongMaterial({
+  domeMat = new THREE.MeshPhongMaterial({
     color: 0x5ea2f0,
+    emissive: 0x1b4578,
+    emissiveIntensity: 0.25,
     transparent: true,
-    opacity: 0.42,
+    opacity: 0.48,
     shininess: 95
   });
   const dome = new THREE.Mesh(domeGeo, domeMat);
@@ -89,7 +99,12 @@ export function buildCentralExchangeComplex() {
 
   // 4. Prominent Exchange Headquarters Tower
   const towerGeo = new THREE.CylinderGeometry(8.8, 10.6, 28, 16);
-  const towerMat = new THREE.MeshPhongMaterial({ color: 0x3b5875, shininess: 75 });
+  towerMat = new THREE.MeshPhongMaterial({
+    color: 0x3b5875,
+    emissive: 0x18304c,
+    emissiveIntensity: 0.2,
+    shininess: 75
+  });
   const mainTower = new THREE.Mesh(towerGeo, towerMat);
   mainTower.position.set(0, 21.5, 0);
   mainTower.castShadow = true;
@@ -156,12 +171,15 @@ export function buildCentralExchangeComplex() {
     const wGroup = new THREE.Group();
     wGroup.position.set(w.x, 0, w.z);
 
+    const wingAo = createContactShadowMesh(15, 15, 0.6);
+    wingAo.position.y = 0.62;
+    wGroup.add(wingAo);
+
     const wing = new THREE.Mesh(new THREE.BoxGeometry(11, 11.5, 11), wingMat);
     wing.position.y = 6.2;
     wing.castShadow = true;
     wGroup.add(wing);
 
-    // Glowing entrance portal arch on outward face
     const zSign = w.z > 0 ? 5.65 : -5.65;
     const portalFrame = new THREE.Mesh(new THREE.BoxGeometry(5.2, 4.2, 0.3), portalMat);
     portalFrame.position.set(0, 2.6, zSign);
@@ -202,6 +220,15 @@ export function buildCentralExchangeComplex() {
   });
 }
 
+export function setExchangeNightGlow(nightFactor) {
+  if (domeMat) {
+    domeMat.emissiveIntensity = 0.22 + nightFactor * 0.95;
+  }
+  if (towerMat) {
+    towerMat.emissiveIntensity = 0.15 + nightFactor * 0.65;
+  }
+}
+
 export function updateExchangeMonumentAndTicker(viewState) {
   if (exchangeMonumentMat) {
     const mood = viewState.totals.mood;
@@ -219,7 +246,6 @@ export function updateExchangeMonumentAndTicker(viewState) {
   tickerCtx.lineWidth = 4;
   tickerCtx.strokeRect(0, 2, 1024, 92);
 
-  // Pick top 6 absolute movers to display on the 3D ticker band
   const movers = [...viewState.companies]
     .sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
     .slice(0, 6);

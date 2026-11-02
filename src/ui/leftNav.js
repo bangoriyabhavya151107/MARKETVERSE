@@ -1,5 +1,6 @@
 /**
- * Left Navigation Sidebar, Camera Presets, Heatmap Mode, Quality Selector, and Atmosphere Controls.
+ * Left Navigation Sidebar, Camera Presets, Smooth Day/Night & Auto-Cycle,
+ * Market-Mood Atmosphere Override, Heatmap Mode, and Quality Selector.
  */
 import { store } from '../state/store.js';
 import { applyCameraPreset } from '../controls/cameraRig.js';
@@ -50,10 +51,28 @@ export function initLeftNavEvents() {
 
   document.getElementById('day-night-btn').addEventListener('click', e => {
     const live = store.getLiveState();
+    live.autoDayNight = false;
+    const autoBtn = document.getElementById('auto-cycle-btn');
+    if (autoBtn) autoBtn.classList.remove('active');
+
     live.isNight = !live.isNight;
     e.target.textContent = live.isNight ? '🌙 Night' : '☀️ Day';
     applyWeatherAndLighting(store.getViewState());
   });
+
+  const autoCycleBtn = document.getElementById('auto-cycle-btn');
+  if (autoCycleBtn) {
+    autoCycleBtn.addEventListener('click', () => {
+      const live = store.getLiveState();
+      live.autoDayNight = !live.autoDayNight;
+      autoCycleBtn.classList.toggle('active', live.autoDayNight);
+      showToast(
+        live.autoDayNight
+          ? 'Automatic Day/Night solar cycle enabled.'
+          : 'Automatic Day/Night cycle paused.'
+      );
+    });
+  }
 
   document.getElementById('labels-toggle-btn').addEventListener('click', e => {
     const live = store.getLiveState();
@@ -61,6 +80,21 @@ export function initLeftNavEvents() {
     e.target.classList.toggle('active', live.labelsVisible);
     update3DCityFromState(store.getViewState());
   });
+
+  const atmoOverrideBtn = document.getElementById('atmo-override-btn');
+  if (atmoOverrideBtn) {
+    atmoOverrideBtn.addEventListener('click', () => {
+      const live = store.getLiveState();
+      live.atmosphereOverride = !live.atmosphereOverride;
+      atmoOverrideBtn.classList.toggle('active', !live.atmosphereOverride);
+      atmoOverrideBtn.textContent = live.atmosphereOverride ? '🌤️ Override' : '🌤️ Mood Sky';
+      showToast(
+        live.atmosphereOverride
+          ? 'Market-driven sky tint overridden (manual neutral sky).'
+          : 'Market-driven atmosphere enabled (Rally = Golden, Sell-off = Red Skyline).'
+      );
+    });
+  }
 
   const heatmapBtn = document.getElementById('heatmap-toggle-btn');
   if (heatmapBtn) {
@@ -81,6 +115,10 @@ export function initLeftNavEvents() {
   document.getElementById('weather-select').addEventListener('change', e => {
     const live = store.getLiveState();
     live.weather = e.target.value;
+    if (live.weather === 'NIGHT' || live.weather === 'EVENING') {
+      live.autoDayNight = false;
+      if (autoCycleBtn) autoCycleBtn.classList.remove('active');
+    }
     applyWeatherAndLighting(store.getViewState());
   });
 

@@ -1,12 +1,17 @@
 /**
- * Ground Plaza, Paved Road Network with Lane Markings & Crosswalks,
- * Raised Sidewalks & Curbs, Scenic Canal Waterway, and Bridges.
+ * Ground Plaza, Paved Road Network with Reflective Wet-Road Material Support,
+ * Sidewalks & Curbs, Scenic Canal Waterway, Bridges, and Light/Dark 3D Theme Palette.
  */
 import * as THREE from 'three';
 import { scene } from './scene.js';
+import { createContactShadowMesh } from './lighting.js';
 
+let groundMat = null;
+let sidewalkMat = null;
+let embankmentMat = null;
 let canalWaterMesh = null;
 let canalWaterTexture = null;
+const roadMaterials = [];
 
 function createPlazaTileTexture() {
   const canvas = document.createElement('canvas');
@@ -14,10 +19,10 @@ function createPlazaTileTexture() {
   canvas.height = 256;
   const ctx = canvas.getContext('2d');
 
-  ctx.fillStyle = '#15202b';
+  ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, 256, 256);
 
-  ctx.strokeStyle = '#1e2d3b';
+  ctx.strokeStyle = '#d0dce8';
   ctx.lineWidth = 2;
   const step = 32;
   for (let i = 0; i <= 256; i += step) {
@@ -32,8 +37,7 @@ function createPlazaTileTexture() {
     ctx.stroke();
   }
 
-  // Subtle checker tone variation
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.015)';
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.04)';
   for (let y = 0; y < 8; y++) {
     for (let x = 0; x < 8; x++) {
       if ((x + y) % 2 === 0) {
@@ -55,16 +59,13 @@ function createRoadAsphaltTexture(isHorizontal, lengthUnits) {
   canvas.height = 512;
   const ctx = canvas.getContext('2d');
 
-  // Dark asphalt base
-  ctx.fillStyle = '#0f161e';
+  ctx.fillStyle = '#18222d';
   ctx.fillRect(0, 0, 128, 512);
 
-  // Outer lane edge lines
-  ctx.fillStyle = '#2d4156';
+  ctx.fillStyle = '#3b526b';
   ctx.fillRect(8, 0, 3, 512);
   ctx.fillRect(117, 0, 3, 512);
 
-  // Center dashed yellow/amber divider
   ctx.fillStyle = '#d6a84f';
   for (let y = 16; y < 512; y += 48) {
     ctx.fillRect(62, y, 4, 24);
@@ -89,16 +90,13 @@ function createCrosswalkTexture() {
   canvas.height = 128;
   const ctx = canvas.getContext('2d');
 
-  ctx.fillStyle = '#111922';
+  ctx.fillStyle = '#18222d';
   ctx.fillRect(0, 0, 128, 128);
 
-  // Zebra stripes on all 4 approaches
-  ctx.fillStyle = '#cad8e6';
+  ctx.fillStyle = '#d4e2f0';
   for (let i = 18; i < 110; i += 14) {
-    // North & South crosswalks
     ctx.fillRect(i, 4, 8, 18);
     ctx.fillRect(i, 106, 8, 18);
-    // West & East crosswalks
     ctx.fillRect(4, i, 18, 8);
     ctx.fillRect(106, i, 18, 8);
   }
@@ -115,7 +113,7 @@ function createCanalWaterTexture() {
   ctx.fillStyle = '#0c283d';
   ctx.fillRect(0, 0, 256, 256);
 
-  ctx.strokeStyle = 'rgba(94, 194, 214, 0.22)';
+  ctx.strokeStyle = 'rgba(94, 194, 214, 0.25)';
   ctx.lineWidth = 2;
   for (let y = 0; y < 256; y += 16) {
     ctx.beginPath();
@@ -137,17 +135,22 @@ function createCanalWaterTexture() {
 export function buildGroundAndRoadNetwork() {
   if (!scene) return;
 
-  // 1. Main City Peninsula Stone Foundation
+  // 1. Main City Peninsula Stone Foundation (MeshPhongMaterial for wet-rain reflection support)
   const plazaTex = createPlazaTileTexture();
   const groundGeo = new THREE.BoxGeometry(276, 4, 256);
-  const groundMat = new THREE.MeshLambertMaterial({ map: plazaTex });
+  groundMat = new THREE.MeshPhongMaterial({
+    map: plazaTex,
+    color: 0x16222f,
+    specular: 0x111922,
+    shininess: 12
+  });
   const ground = new THREE.Mesh(groundGeo, groundMat);
   ground.position.set(0, -2, 8);
   ground.receiveShadow = true;
   scene.add(ground);
 
-  // 2. Scenic Canal Waterway along the Western Edge (x = -116)
-  const embankmentMat = new THREE.MeshLambertMaterial({ color: 0x243444 });
+  // 2. Scenic Canal Waterway along the Western Edge (x = -117)
+  embankmentMat = new THREE.MeshLambertMaterial({ color: 0x243444 });
   const westBank = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.4, 256), embankmentMat);
   westBank.position.set(-108.5, 0.4, 8);
   scene.add(westBank);
@@ -163,14 +166,15 @@ export function buildGroundAndRoadNetwork() {
     map: canalWaterTexture,
     color: 0x1a5b7a,
     emissive: 0x071d2c,
-    shininess: 90
+    specular: 0x88ccff,
+    shininess: 95
   });
   canalWaterMesh = new THREE.Mesh(waterGeo, waterMat);
   canalWaterMesh.position.set(-117, 0.12, 8);
   scene.add(canalWaterMesh);
 
   // 3. Paved Road Avenues with Sidewalks & Curbs
-  const sidewalkMat = new THREE.MeshLambertMaterial({ color: 0x263545 });
+  sidewalkMat = new THREE.MeshLambertMaterial({ color: 0x263545 });
   const avenues = [
     { x: -42, z: 8, w: 7.4, d: 226, horiz: false },
     { x: 42, z: 8, w: 7.4, d: 226, horiz: false },
@@ -180,7 +184,6 @@ export function buildGroundAndRoadNetwork() {
   ];
 
   avenues.forEach(r => {
-    // Raised sidewalk base on both sides of the road
     const swW = r.horiz ? r.w : r.w + 2.6;
     const swD = r.horiz ? r.d + 2.6 : r.d;
     const swMesh = new THREE.Mesh(new THREE.BoxGeometry(swW, 0.22, swD), sidewalkMat);
@@ -188,18 +191,30 @@ export function buildGroundAndRoadNetwork() {
     swMesh.receiveShadow = true;
     scene.add(swMesh);
 
-    // Asphalt Roadway with lane markings
     const roadTex = createRoadAsphaltTexture(r.horiz, r.horiz ? r.w : r.d);
-    const roadMat = new THREE.MeshLambertMaterial({ map: roadTex });
+    const roadMat = new THREE.MeshPhongMaterial({
+      map: roadTex,
+      color: 0xffffff,
+      specular: 0x182430,
+      shininess: 18
+    });
+    roadMaterials.push(roadMat);
+
     const roadMesh = new THREE.Mesh(new THREE.BoxGeometry(r.w, 0.26, r.d), roadMat);
     roadMesh.position.set(r.x, 0.13, r.z);
     roadMesh.receiveShadow = true;
     scene.add(roadMesh);
   });
 
-  // 4. Intersection Crosswalks at the 6 Avenue Intersections
+  // 4. Intersection Crosswalks
   const crosswalkTex = createCrosswalkTexture();
-  const crosswalkMat = new THREE.MeshLambertMaterial({ map: crosswalkTex });
+  const crosswalkMat = new THREE.MeshPhongMaterial({
+    map: crosswalkTex,
+    specular: 0x203040,
+    shininess: 20
+  });
+  roadMaterials.push(crosswalkMat);
+
   const intersections = [
     { x: -42, z: -55 },
     { x: 42, z: -55 },
@@ -212,10 +227,11 @@ export function buildGroundAndRoadNetwork() {
   intersections.forEach(pt => {
     const cw = new THREE.Mesh(new THREE.BoxGeometry(9.6, 0.28, 9.6), crosswalkMat);
     cw.position.set(pt.x, 0.14, pt.z);
+    cw.receiveShadow = true;
     scene.add(cw);
   });
 
-  // 5. Three Arch/Truss Bridges where Horizontal Avenues Cross the Western Canal
+  // 5. Three Arch Bridges with Soft Contact Shadows
   const bridgeDeckMat = new THREE.MeshLambertMaterial({ color: 0x34495e });
   const bridgeArchMat = new THREE.MeshPhongMaterial({ color: 0x4b8be8, shininess: 50 });
 
@@ -228,7 +244,10 @@ export function buildGroundAndRoadNetwork() {
     deck.castShadow = true;
     bGroup.add(deck);
 
-    // Twin Steel Parapet Arches
+    const bridgeAo = createContactShadowMesh(20, 11, 0.55);
+    bridgeAo.position.y = 0.16;
+    bGroup.add(bridgeAo);
+
     [-4.3, 4.3].forEach(zOff => {
       const arch = new THREE.Mesh(
         new THREE.TorusGeometry(7.5, 0.38, 8, 18, Math.PI),
@@ -239,6 +258,36 @@ export function buildGroundAndRoadNetwork() {
     });
 
     scene.add(bGroup);
+  });
+}
+
+/**
+ * Updates ground & road materials for:
+ * - Wet reflective roads during Rain
+ * - Light vs. Dark UI 3D Scene Palette
+ */
+export function updateGroundMaterials(isRain, nightFactor, lightUiTheme) {
+  if (!groundMat || !sidewalkMat || !embankmentMat) return;
+
+  if (lightUiTheme && nightFactor < 0.45) {
+    groundMat.color.setHex(0xc8d4df);
+    sidewalkMat.color.setHex(0xdbe4ec);
+    embankmentMat.color.setHex(0x9fb0c0);
+  } else {
+    groundMat.color.setHex(0x16222f);
+    sidewalkMat.color.setHex(0x263545);
+    embankmentMat.color.setHex(0x243444);
+  }
+
+  const targetShine = isRain ? 110 : 16;
+  const targetSpecHex = isRain ? 0x7ab4e8 : 0x15202b;
+
+  groundMat.shininess = targetShine * 0.7;
+  groundMat.specular.setHex(targetSpecHex);
+
+  roadMaterials.forEach(rm => {
+    rm.shininess = targetShine;
+    rm.specular.setHex(targetSpecHex);
   });
 }
 

@@ -2,7 +2,8 @@
  * Deterministic Market Simulation Engine.
  * - Uses `simRng` exclusively so resets are 100% deterministic.
  * - Generates distinct seeded histories for 1D, 1W, 1M, 3M, and 1Y at init (never scaling 1D).
- * - Implements event duration & per-tick decay, plus `endActiveEvent()` separate from `resetFullSimulation()`.
+ * - Implements event duration & per-tick decay, 5-second atmospheric visual cue,
+ *   plus `endActiveEvent()` separate from `resetFullSimulation()`.
  */
 import { store } from '../state/store.js';
 import { simRng } from './rng.js';
@@ -21,6 +22,16 @@ const HORIZON_CONFIGS = {
   '1Y': { points: 30, stepRange: 0.042, volScale: 1.45 }
 };
 
+const EVENT_CUE_COLORS = {
+  RATE_HIKE: 0x3888ff,       // Cold blue wash
+  RATE_CUT: 0x22c58b,        // Accommodative emerald-teal wash
+  OIL_SPIKE: 0xe8832a,       // Crude amber-orange wash
+  TECH_SELLOFF: 0x8a4fff,    // Electric violet-indigo wash
+  STRONG_EARNINGS: 0xffc83d, // Radiant golden wash
+  INR_DEPREC: 0xd97845,      // Copper-bronze wash
+  RISK_OFF: 0xd93848         // Alert crimson wash
+};
+
 /**
  * Generates an authentic seeded historical series for a specific horizon
  * that walks deterministically and terminates at `currentPrice`.
@@ -36,7 +47,6 @@ function generateSeededHorizonSeries(basePrice, currentPrice, baseVolume, horizo
     rawWalk.push(p);
   }
 
-  // Bridge endpoints smoothly so the last point equals `currentPrice`
   const lastRaw = rawWalk[rawWalk.length - 1];
   const priceSeries = rawWalk.map((val, idx) => {
     if (idx === rawWalk.length - 1) return currentPrice;
@@ -64,6 +74,7 @@ export function initDataset() {
   live.activeEventId = 'NONE';
   live.eventRemainingTicks = 0;
   live.eventTotalTicks = 0;
+  live.eventCue = { id: 'NONE', colorHex: 0x4b8be8, timer: 0, duration: 5.0 };
   live.replayHistory = [];
   live.replayIndex = -1;
   live.replayViewState = null;
@@ -94,7 +105,6 @@ export function initDataset() {
     const baseVolume = Math.round(simRng.range(120000, 3800000));
     const eps = raw.pe ? Number((previousClose / raw.pe).toFixed(2)) : null;
 
-    // Generate distinct seeded series for all 5 horizons (1D, 1W, 1M, 3M, 1Y)
     const histories = {};
     const volHistories = {};
     ['1D', '1W', '1M', '3M', '1Y'].forEach(hKey => {
@@ -166,7 +176,6 @@ export function initDataset() {
 
 /**
  * Advances the live simulation by 1 tick.
- * Applies decaying event drift if an event is active.
  */
 export function stepMarketSimulation() {
   const live = store.getLiveState();
@@ -194,7 +203,6 @@ export function stepMarketSimulation() {
     const tradeChunk = Math.round(simRng.range(8000, 65000) * (1 + deltaAbs * 80));
     c.volume += tradeChunk;
 
-    // Append to 1D series and keep multi-horizon final point synced with live price
     c.histories['1D'].push(c.price);
     if (c.histories['1D'].length > 30) c.histories['1D'].shift();
     c.volHistories['1D'].push(tradeChunk);
@@ -212,7 +220,6 @@ export function stepMarketSimulation() {
     }
   });
 
-  // Decay active event duration
   if (live.activeEventId !== 'NONE') {
     live.eventRemainingTicks = Math.max(0, live.eventRemainingTicks - 1);
     if (live.eventRemainingTicks === 0) {
@@ -241,7 +248,8 @@ export function stepMarketSimulation() {
 }
 
 /**
- * Applies a hypothetical economic event with immediate impulse + decaying duration.
+ * Applies a hypothetical economic event with immediate impulse, decaying duration,
+ * and a 5-second visual atmospheric cue.
  */
 export function applyEconomicEvent(eventId) {
   returnToLiveReplay();
@@ -258,6 +266,14 @@ export function applyEconomicEvent(eventId) {
   live.activeEventId = eventId;
   live.eventTotalTicks = ev.durationTicks || 10;
   live.eventRemainingTicks = live.eventTotalTicks;
+
+  // Trigger 5-second visual atmospheric wash for the event
+  live.eventCue = {
+    id: eventId,
+    colorHex: EVENT_CUE_COLORS[eventId] || 0x4b8be8,
+    timer: 5.0,
+    duration: 5.0
+  };
 
   live.companies.forEach(c => {
     const impact = ev.impacts[c.sector] || 0;
@@ -279,14 +295,14 @@ export function applyEconomicEvent(eventId) {
 }
 
 /**
- * Ends the currently active hypothetical event (clears remaining event drift)
- * WITHOUT resetting the simulation prices, clock, or history.
+ * Ends the currently active hypothetical event WITHOUT resetting simulation progress.
  */
 export function endActiveEvent() {
   const live = store.getLiveState();
   live.activeEventId = 'NONE';
   live.eventRemainingTicks = 0;
   live.eventTotalTicks = 0;
+  live.eventCue.timer = 0;
   store.emit('event');
   store.emit('tick');
 }
@@ -301,5 +317,3 @@ export function resetFullSimulation() {
   store.emit('whatif');
   store.emit('tick');
 }
-
-

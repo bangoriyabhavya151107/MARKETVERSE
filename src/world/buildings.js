@@ -1,11 +1,13 @@
 /**
  * 36 Company Buildings — 10 Sector Architectural Languages, Procedural Window Facades,
- * Volume-Driven Window Density, Base Mover Sparkline Rings, and Smooth Lerped Scale Transitions.
+ * Soft Contact Shadow Decals (AO), Night Emissive Window Glow, Base Mover Sparkline Rings,
+ * and Smooth Lerped Scale Transitions.
  */
 import * as THREE from 'three';
 import { scene, interactiveMeshes } from './scene.js';
 import { SECTOR_MAP } from '../data/sectors.js';
 import { getCapTier } from '../engine/finance.js';
+import { createContactShadowMesh } from './lighting.js';
 import { registerWorldLabel, updateCompanyLabelAnchor } from './labels.js';
 import { updateExchangeMonumentAndTicker } from './exchange.js';
 import { updateSectorDistrictHighlights } from './districts.js';
@@ -24,17 +26,25 @@ export function computeBuildingWidth(mcapCr, thresholds) {
 }
 
 /**
- * Generates a procedural facade CanvasTexture with lit windows proportional to `litRatio`.
+ * Generates both diffuse and emissive window CanvasTextures so windows glow at night.
  */
-function createFacadeWindowTexture(sectorHex, litRatio = 0.55, seedOffset = 1) {
+function createFacadeWindowTextures(sectorHex, litRatio = 0.55, seedOffset = 1) {
   const canvas = document.createElement('canvas');
   canvas.width = 128;
   canvas.height = 256;
   const ctx = canvas.getContext('2d');
 
+  const emCanvas = document.createElement('canvas');
+  emCanvas.width = 128;
+  emCanvas.height = 256;
+  const emCtx = emCanvas.getContext('2d');
+
   const baseCol = new THREE.Color(sectorHex).lerp(new THREE.Color(0x1e2c3a), 0.65);
   ctx.fillStyle = '#' + baseCol.getHexString();
   ctx.fillRect(0, 0, 128, 256);
+
+  emCtx.fillStyle = '#000000';
+  emCtx.fillRect(0, 0, 128, 256);
 
   // Subtle vertical bevel mullions
   ctx.fillStyle = 'rgba(10, 16, 24, 0.55)';
@@ -54,31 +64,35 @@ function createFacadeWindowTexture(sectorHex, litRatio = 0.55, seedOffset = 1) {
       hash = (hash * 16807) % 2147483647;
       const rand = (hash & 0xffff) / 0xffff;
       if (rand < litRatio) {
-        ctx.fillStyle = rand < litRatio * 0.35 ? '#ffe7a3' : '#9ed2ff';
+        const winColor = rand < litRatio * 0.35 ? '#ffe7a3' : '#9ed2ff';
+        ctx.fillStyle = winColor;
+        emCtx.fillStyle = winColor;
       } else {
         ctx.fillStyle = '#121c26';
+        emCtx.fillStyle = '#000000';
       }
       ctx.fillRect(padX + c * cellW + 3, padY + r * cellH + 3, cellW - 6, cellH - 6);
+      emCtx.fillRect(padX + c * cellW + 3, padY + r * cellH + 3, cellW - 6, cellH - 6);
     }
   }
 
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.wrapS = THREE.RepeatWrapping;
-  tex.wrapT = THREE.RepeatWrapping;
-  return tex;
+  const map = new THREE.CanvasTexture(canvas);
+  map.wrapS = THREE.RepeatWrapping;
+  map.wrapT = THREE.RepeatWrapping;
+
+  const emissiveMap = new THREE.CanvasTexture(emCanvas);
+  emissiveMap.wrapS = THREE.RepeatWrapping;
+  emissiveMap.wrapT = THREE.RepeatWrapping;
+
+  return { map, emissiveMap };
 }
 
-/**
- * Builds sector-specific architectural silhouette inside `archGroup` (normalized to unit width=1, height=1)
- * and rooftop details inside `roofGroup` (positioned at top of tower).
- */
 function buildSectorArchitecture(sectorId, bodyMat, accentMat, darkGlassMat) {
   const archGroup = new THREE.Group();
   const roofGroup = new THREE.Group();
 
   switch (sectorId) {
     case 'TECH': {
-      // Stepped glass tower with setbacks and rooftop antenna array
       const lower = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.62, 1.0), bodyMat);
       lower.position.y = 0.31;
       lower.castShadow = true;
@@ -93,7 +107,6 @@ function buildSectorArchitecture(sectorId, bodyMat, accentMat, darkGlassMat) {
       upper.position.y = 0.93;
       archGroup.add(upper);
 
-      // Rooftop twin antennas & spire
       const spire1 = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.04, 3.2, 6), accentMat);
       spire1.position.set(-0.14, 1.6, -0.14);
       roofGroup.add(spire1);
@@ -105,14 +118,12 @@ function buildSectorArchitecture(sectorId, bodyMat, accentMat, darkGlassMat) {
     }
 
     case 'BANKING': {
-      // Classical colonnade stone base + sleek dark glass tower
       const stoneMat = new THREE.MeshLambertMaterial({ color: 0x8fa3b8 });
       const podium = new THREE.Mesh(new THREE.BoxGeometry(1.08, 0.2, 1.08), stoneMat);
       podium.position.y = 0.1;
       podium.castShadow = true;
       archGroup.add(podium);
 
-      // Corner colonnade pilasters
       [-0.48, 0.48].forEach(px => {
         [-0.48, 0.48].forEach(pz => {
           const col = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.22, 8), stoneMat);
@@ -133,7 +144,6 @@ function buildSectorArchitecture(sectorId, bodyMat, accentMat, darkGlassMat) {
     }
 
     case 'ENERGY': {
-      // Industrial refinery block + storage tank + twin tall chimneys & pylon
       const mainHall = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.65, 0.75), bodyMat);
       mainHall.position.set(0, 0.325, 0.1);
       mainHall.castShadow = true;
@@ -156,7 +166,6 @@ function buildSectorArchitecture(sectorId, bodyMat, accentMat, darkGlassMat) {
     }
 
     case 'HEALTH': {
-      // Rounded clinical podium + cross-shaped (+) hospital wing + medical cross roof emblem
       const podium = new THREE.Mesh(new THREE.CylinderGeometry(0.56, 0.58, 0.22, 18), accentMat);
       podium.position.y = 0.11;
       archGroup.add(podium);
@@ -181,7 +190,6 @@ function buildSectorArchitecture(sectorId, bodyMat, accentMat, darkGlassMat) {
     }
 
     case 'AUTO': {
-      // Wide manufacturing hall with sawtooth factory roof ridges + office tower
       const shed = new THREE.Mesh(new THREE.BoxGeometry(1.08, 0.48, 1.04), bodyMat);
       shed.position.y = 0.24;
       shed.castShadow = true;
@@ -192,7 +200,6 @@ function buildSectorArchitecture(sectorId, bodyMat, accentMat, darkGlassMat) {
       tower.castShadow = true;
       archGroup.add(tower);
 
-      // Sawtooth roof wedges on the lower shed
       for (let i = -1; i <= 1; i++) {
         const prism = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.8, 4), accentMat);
         prism.rotation.y = Math.PI / 4;
@@ -203,7 +210,6 @@ function buildSectorArchitecture(sectorId, bodyMat, accentMat, darkGlassMat) {
     }
 
     case 'CONSUMER': {
-      // Terraced retail mall block + colorful storefront awnings + skylight dome
       const mallBase = new THREE.Mesh(new THREE.BoxGeometry(1.06, 0.42, 1.06), bodyMat);
       mallBase.position.y = 0.21;
       mallBase.castShadow = true;
@@ -219,14 +225,16 @@ function buildSectorArchitecture(sectorId, bodyMat, accentMat, darkGlassMat) {
       awning.position.y = 0.42;
       archGroup.add(awning);
 
-      const skylight = new THREE.Mesh(new THREE.SphereGeometry(0.28, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), darkGlassMat);
+      const skylight = new THREE.Mesh(
+        new THREE.SphereGeometry(0.28, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2),
+        darkGlassMat
+      );
       skylight.position.y = 0.5;
       roofGroup.add(skylight);
       break;
     }
 
     case 'TELECOM': {
-      // Tech podium + tapered lattice signal tower + microwave dish rings
       const base = new THREE.Mesh(new THREE.BoxGeometry(0.92, 0.55, 0.92), bodyMat);
       base.position.y = 0.275;
       base.castShadow = true;
@@ -248,7 +256,6 @@ function buildSectorArchitecture(sectorId, bodyMat, accentMat, darkGlassMat) {
     }
 
     case 'INFRA_IND': {
-      // Heavy industrial block + twin cylindrical silos + rooftop crane jib
       const block = new THREE.Mesh(new THREE.BoxGeometry(0.84, 0.88, 0.72), bodyMat);
       block.position.set(-0.08, 0.44, 0.12);
       block.castShadow = true;
@@ -270,7 +277,6 @@ function buildSectorArchitecture(sectorId, bodyMat, accentMat, darkGlassMat) {
     }
 
     case 'MATERIALS': {
-      // Smelter hall + twin tapered blast furnace stacks
       const smelter = new THREE.Mesh(new THREE.BoxGeometry(0.98, 0.72, 0.98), bodyMat);
       smelter.position.y = 0.36;
       smelter.castShadow = true;
@@ -289,7 +295,6 @@ function buildSectorArchitecture(sectorId, bodyMat, accentMat, darkGlassMat) {
     }
 
     default: {
-      // OTHER: Mixed-use asymmetric twin towers with skybridge
       const podium = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.24, 1.0), bodyMat);
       podium.position.y = 0.12;
       archGroup.add(podium);
@@ -330,7 +335,12 @@ export function buildCompanyBuildings(companies) {
     const relVol = comp.volume / Math.max(1, comp.avgDailyVolume);
     const litRatio = Math.max(0.25, Math.min(0.92, 0.45 * relVol));
 
-    // 1. Base Plinth
+    // 1. Soft Baked-Looking AO Contact Shadow Decal under Building
+    const aoShadowMesh = createContactShadowMesh(width * 1.75, width * 1.75, 0.65);
+    aoShadowMesh.position.y = 0.03;
+    bGroup.add(aoShadowMesh);
+
+    // 2. Base Plinth
     const plinthGeo = new THREE.BoxGeometry(1.14, 0.6, 1.14);
     plinthGeo.translate(0, 0.3, 0);
     const plinthMesh = new THREE.Mesh(plinthGeo, plinthMat);
@@ -338,11 +348,14 @@ export function buildCompanyBuildings(companies) {
     plinthMesh.receiveShadow = true;
     bGroup.add(plinthMesh);
 
-    // 2. Procedural Facade Material & Sector Architecture
-    const facadeTex = createFacadeWindowTexture(sec.hex, litRatio, idx + 1);
+    // 3. Procedural Facade Material (Diffuse + Emissive Window Map for Night Bloom)
+    const { map, emissiveMap } = createFacadeWindowTextures(sec.hex, litRatio, idx + 1);
     const bodyMat = new THREE.MeshPhongMaterial({
-      map: facadeTex,
-      shininess: 42
+      map,
+      emissive: new THREE.Color(0xffffff),
+      emissiveMap,
+      emissiveIntensity: 0.18,
+      shininess: 48
     });
     const accentMat = new THREE.MeshPhongMaterial({
       color: new THREE.Color(sec.hex).lerp(new THREE.Color(0xffffff), 0.18),
@@ -363,7 +376,7 @@ export function buildCompanyBuildings(companies) {
     roofGroup.scale.set(width, 1, width);
     bGroup.add(roofGroup);
 
-    // 3. Dedicated Raycast Hitbox (scales cleanly with width & height)
+    // 4. Dedicated Raycast Hitbox
     const hitGeo = new THREE.BoxGeometry(1.05, 1, 1.05);
     hitGeo.translate(0, 0.5, 0);
     const hitMesh = new THREE.Mesh(hitGeo, new THREE.MeshBasicMaterial({ visible: false }));
@@ -372,7 +385,7 @@ export function buildCompanyBuildings(companies) {
     bGroup.add(hitMesh);
     interactiveMeshes.push(hitMesh);
 
-    // 4. Price-Movement Status Beacon on Roof
+    // 5. Price-Movement Status Beacon on Roof
     const beaconGeo = new THREE.BoxGeometry(0.76, 0.85, 0.76);
     const beaconMat = new THREE.MeshBasicMaterial({ color: 0x22a06b });
     const beaconMesh = new THREE.Mesh(beaconGeo, beaconMat);
@@ -380,7 +393,7 @@ export function buildCompanyBuildings(companies) {
     beaconMesh.scale.set(width, 1, width);
     bGroup.add(beaconMesh);
 
-    // 5. Trading-Activity Base Ring + Mover Sparkline Strip
+    // 6. Trading-Activity Base Ring
     const ringGeo = new THREE.RingGeometry(0.62, 0.76, 24);
     ringGeo.rotateX(-Math.PI / 2);
     const ringMat = new THREE.MeshBasicMaterial({
@@ -394,7 +407,7 @@ export function buildCompanyBuildings(companies) {
     ringMesh.scale.set(width, 1, width);
     bGroup.add(ringMesh);
 
-    // 6. Selection Outline Wireframe
+    // 7. Selection Outline Wireframe
     const selEdges = new THREE.EdgesGeometry(new THREE.BoxGeometry(1.16, 1, 1.16));
     selEdges.translate(0, 0.5, 0);
     const selMat = new THREE.LineBasicMaterial({ color: 0xffffff });
@@ -407,6 +420,7 @@ export function buildCompanyBuildings(companies) {
 
     company3DMap[comp.id] = {
       group: bGroup,
+      aoShadowMesh,
       plinthMesh,
       archGroup,
       roofGroup,
@@ -438,6 +452,15 @@ export function buildCompanyBuildings(companies) {
   });
 }
 
+export function setBuildingsNightEmissive(nightFactor) {
+  const emIntensity = 0.15 + nightFactor * 0.85;
+  Object.values(company3DMap).forEach(b3d => {
+    if (b3d.bodyMat) {
+      b3d.bodyMat.emissiveIntensity = emIntensity;
+    }
+  });
+}
+
 export function update3DCityFromState(viewState) {
   updateExchangeMonumentAndTicker(viewState);
   updateSectorDistrictHighlights(viewState);
@@ -446,7 +469,6 @@ export function update3DCityFromState(viewState) {
     const b3d = company3DMap[c.id];
     if (!b3d) return;
 
-    // Set goal height and goal width for smooth lerping
     b3d.goalHeight = computeBuildingHeight(c.marketCap);
     b3d.goalWidth = computeBuildingWidth(c.marketCap, viewState.mcapThresholds);
     b3d.isLargeMover = Math.abs(c.changePercent) >= 1.2;
@@ -456,20 +478,20 @@ export function update3DCityFromState(viewState) {
       b3d.currentWidth = b3d.goalWidth;
     }
 
-    // Update Window Light Density if relative volume bucket shifted
     const relVol = c.volume / Math.max(1, c.avgDailyVolume);
     const litRatio = Math.max(0.25, Math.min(0.95, 0.45 * relVol));
     const bucket = Math.round(litRatio * 10);
     if (bucket !== b3d.lastLitBucket) {
       b3d.lastLitBucket = bucket;
       const sec = SECTOR_MAP[c.sector];
-      const newTex = createFacadeWindowTexture(sec.hex, litRatio, b3d.idx + bucket);
+      const { map, emissiveMap } = createFacadeWindowTextures(sec.hex, litRatio, b3d.idx + bucket);
       if (b3d.bodyMat.map) b3d.bodyMat.map.dispose();
-      b3d.bodyMat.map = newTex;
+      if (b3d.bodyMat.emissiveMap) b3d.bodyMat.emissiveMap.dispose();
+      b3d.bodyMat.map = map;
+      b3d.bodyMat.emissiveMap = emissiveMap;
       b3d.bodyMat.needsUpdate = true;
     }
 
-    // Update Roof Beacon Color by Daily Change
     if (viewState.dataMode === 'REAL_DATA') {
       b3d.beaconMat.color.setHex(0xd6a84f);
     } else if (c.changePercent > 0.03) {
@@ -480,7 +502,6 @@ export function update3DCityFromState(viewState) {
       b3d.beaconMat.color.setHex(0xd6a84f);
     }
 
-    // Base Ring Color & Opacity for Large Movers
     if (b3d.isLargeMover) {
       b3d.ringMat.color.setHex(c.changePercent >= 0 ? 0x22a06b : 0xd94f52);
       b3d.ringMat.opacity = 0.92;
@@ -518,7 +539,6 @@ export function updateBuildingPulses(liveCompanies, dt, viewState) {
     const b3d = company3DMap[c.id];
     if (!b3d) return;
 
-    // 1. Smoothly Lerp Height & Width toward Goal
     const dh = Math.abs(b3d.goalHeight - b3d.currentHeight);
     const dw = Math.abs(b3d.goalWidth - b3d.currentWidth);
     if (dh > 0.01 || dw > 0.01) {
@@ -529,6 +549,7 @@ export function updateBuildingPulses(liveCompanies, dt, viewState) {
       const w = b3d.currentWidth;
       const h = b3d.currentHeight;
 
+      b3d.aoShadowMesh.scale.set(w * 1.75, 1, w * 1.75);
       b3d.plinthMesh.scale.set(w, 1, w);
       b3d.archGroup.scale.set(w, h, w);
       b3d.roofGroup.position.y = h + 0.6;
@@ -548,7 +569,6 @@ export function updateBuildingPulses(liveCompanies, dt, viewState) {
       }
     }
 
-    // 2. Roof Beacon Pulse Decay + Base Mover Ring Animation
     const w = b3d.currentWidth;
     if (c.pulseIntensity > 0) {
       c.pulseIntensity = Math.max(0, c.pulseIntensity - dt * 1.8);

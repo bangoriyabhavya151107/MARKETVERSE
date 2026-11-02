@@ -113,27 +113,43 @@ export function openSettingsModal() {
 
   body.innerHTML = `
     <div class="section-card">
-      <h4>Visual, Render Quality & Accessibility Controls</h4>
+      <h4>Visual, Post-Processing & Atmosphere Controls</h4>
       <div style="display:flex; flex-direction:column; gap:10px; margin-top:8px;">
         <label style="display:flex; justify-content:space-between; align-items:center;">
           <span>3D Graphics Quality (Active: <strong>${viewState.resolvedQuality}</strong>)</span>
           <select id="modal-quality-select">
             <option value="AUTO" ${viewState.graphicsQuality === 'AUTO' ? 'selected' : ''}>Auto-Detect</option>
-            <option value="HIGH" ${viewState.graphicsQuality === 'HIGH' ? 'selected' : ''}>High (Bloom + Soft Shadows)</option>
+            <option value="HIGH" ${viewState.graphicsQuality === 'HIGH' ? 'selected' : ''}>High (Bloom + SMAA + Soft Shadows)</option>
             <option value="MEDIUM" ${viewState.graphicsQuality === 'MEDIUM' ? 'selected' : ''}>Medium</option>
             <option value="LOW" ${viewState.graphicsQuality === 'LOW' ? 'selected' : ''}>Low (Battery Saver)</option>
           </select>
+        </label>
+        <label style="display:flex; justify-content:space-between; align-items:center;">
+          <span>Post-Processing (Selective Emissive Bloom, SMAA, Vignette)</span>
+          <input type="checkbox" id="modal-postfx-checkbox" ${viewState.postFxEnabled ? 'checked' : ''} />
+        </label>
+        <label style="display:flex; justify-content:space-between; align-items:center;">
+          <span>Depth-of-Field (Focus Blur when a Building is Selected)</span>
+          <input type="checkbox" id="modal-dof-checkbox" ${viewState.dofEnabled ? 'checked' : ''} />
+        </label>
+        <label style="display:flex; justify-content:space-between; align-items:center;">
+          <span>Automatic Smooth Day/Night Solar Cycle</span>
+          <input type="checkbox" id="modal-autocycle-checkbox" ${viewState.autoDayNight ? 'checked' : ''} />
+        </label>
+        <label style="display:flex; justify-content:space-between; align-items:center;">
+          <span>Override Market-Driven Sky Tint (Keep Neutral Sky)</span>
+          <input type="checkbox" id="modal-atmo-override-checkbox" ${viewState.atmosphereOverride ? 'checked' : ''} />
         </label>
         <label style="display:flex; justify-content:space-between; align-items:center;">
           <span>Sector-Performance Ground Heatmap</span>
           <input type="checkbox" id="modal-heatmap-checkbox" ${viewState.heatmapMode ? 'checked' : ''} />
         </label>
         <label style="display:flex; justify-content:space-between; align-items:center;">
-          <span>Interface Theme (Dark Navy vs. High-Contrast Daylight)</span>
-          <button id="toggle-theme-modal-btn">Toggle UI Theme</button>
+          <span>Interface & 3D City Theme (Dark Navy vs. Daylight Palette)</span>
+          <button id="toggle-theme-modal-btn">Toggle UI & 3D Theme</button>
         </label>
         <label style="display:flex; justify-content:space-between; align-items:center;">
-          <span>Reduced Motion (Instant camera jumps & minimal background motion)</span>
+          <span>Reduced Motion (Respects OS prefers-reduced-motion)</span>
           <input type="checkbox" id="reduced-motion-checkbox" ${viewState.reducedMotion ? 'checked' : ''} />
         </label>
       </div>
@@ -151,6 +167,33 @@ export function openSettingsModal() {
     openSettingsModal();
   });
 
+  body.querySelector('#modal-postfx-checkbox').addEventListener('change', e => {
+    store.getLiveState().postFxEnabled = e.target.checked;
+    syncQualitySettings(store.getLiveState().graphicsQuality);
+  });
+
+  body.querySelector('#modal-dof-checkbox').addEventListener('change', e => {
+    store.getLiveState().dofEnabled = e.target.checked;
+    syncQualitySettings(store.getLiveState().graphicsQuality);
+  });
+
+  body.querySelector('#modal-autocycle-checkbox').addEventListener('change', e => {
+    const live = store.getLiveState();
+    live.autoDayNight = e.target.checked;
+    const autoBtn = document.getElementById('auto-cycle-btn');
+    if (autoBtn) autoBtn.classList.toggle('active', live.autoDayNight);
+  });
+
+  body.querySelector('#modal-atmo-override-checkbox').addEventListener('change', e => {
+    const live = store.getLiveState();
+    live.atmosphereOverride = e.target.checked;
+    const atmoBtn = document.getElementById('atmo-override-btn');
+    if (atmoBtn) {
+      atmoBtn.classList.toggle('active', !live.atmosphereOverride);
+      atmoBtn.textContent = live.atmosphereOverride ? '🌤️ Override' : '🌤️ Mood Sky';
+    }
+  });
+
   body.querySelector('#modal-heatmap-checkbox').addEventListener('change', e => {
     const live = store.getLiveState();
     live.heatmapMode = e.target.checked;
@@ -164,6 +207,8 @@ export function openSettingsModal() {
 
   body.querySelector('#toggle-theme-modal-btn').addEventListener('click', () => {
     document.body.classList.toggle('light-ui');
+    store.getLiveState().lightUiTheme = document.body.classList.contains('light-ui');
+    store.emit('settings');
   });
 
   body.querySelector('#reduced-motion-checkbox').addEventListener('change', e => {
