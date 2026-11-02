@@ -14,7 +14,7 @@ class Store {
 
     this.state = {
       // UI & Mode Configuration
-      dataMode: 'SIMULATION', // 'SIMULATION' | 'REAL_DATA'
+      dataMode: 'SIMULATION',
       exchangeFilter: 'ALL',
       beginnerMode: true,
       activeNavView: 'overview',
@@ -23,11 +23,12 @@ class Store {
       tableSort: { col: 'marketCap', asc: false },
       tableFilter: '',
       selectedObject: null, // { type: 'COMPANY'|'SECTOR'|'EXCHANGE'|'INFRA'|'LEARN', id: string }
+      hoveredObject: null,  // { type: 'COMPANY'|'SECTOR'|'EXCHANGE'|'INFRA'|'LEARN', id: string }
 
       // User Tools State
       compareIds: ['C01', 'C06', 'C11'],
       watchlistIds: [],
-      portfolio: [], // [{ id, qty, avgCost }]
+      portfolio: [],
       alerts: [],
       triggeredAlerts: [],
       mcapThresholds: { largeCr: 100000, midCr: 40000 },
@@ -36,7 +37,7 @@ class Store {
       simRunning: true,
       simSpeed: 1,
       simTickCount: 0,
-      simSecondsFromOpen: 36900, // 10:15:00 IST
+      simSecondsFromOpen: 36900,
       activeEventId: 'NONE',
       eventRemainingTicks: 0,
       eventTotalTicks: 0,
@@ -98,42 +99,32 @@ class Store {
       },
 
       // Immutable Replay Buffer & View State
-      replayHistory: [], // Array of frozen snapshots
-      replayIndex: -1, // -1 means Live
-      replayViewState: null, // Populated when replayIndex !== -1
+      replayHistory: [],
+      replayIndex: -1,
+      replayViewState: null,
 
       // 3D Environment, Lighting, Atmosphere & Post-Processing Settings
       labelsVisible: true,
       heatmapMode: false,
-      weather: 'CLEAR', // 'CLEAR' | 'CLOUDY' | 'RAIN' | 'EVENING' | 'NIGHT'
+      weather: 'CLEAR',
       isNight: false,
-      timeOfDay: 13.5, // Continuous 0..24 hour clock for lighting/sky (13.5 = afternoon)
+      timeOfDay: 13.5,
       targetTimeOfDay: 13.5,
       autoDayNight: false,
-      atmosphereOverride: false, // false = Market-Mood drives sky tint; true = manual override
-      lightUiTheme: false, // Synced with body.light-ui to switch 3D scene palette
+      atmosphereOverride: false,
+      lightUiTheme: false,
       reducedMotion: Boolean(prefersReduced),
-      graphicsQuality: 'AUTO', // 'AUTO' | 'HIGH' | 'MEDIUM' | 'LOW'
-      resolvedQuality: 'HIGH', // 'HIGH' | 'MEDIUM' | 'LOW'
+      graphicsQuality: 'AUTO',
+      resolvedQuality: 'HIGH',
       postFxEnabled: true,
       dofEnabled: true
     };
   }
 
-  /**
-   * Returns the live mutable state (used by engine mutations).
-   */
   getLiveState() {
     return this.state;
   }
 
-  /**
-   * Returns a unified view state for UI and 3D rendering:
-   * - When in Live mode (`replayIndex === -1`), returns `this.state`.
-   * - When scrubbing Replay (`replayIndex !== -1`), overlays the immutable snapshot's
-   *   financial data (`companies`, `indices`, `totals`, `simSecondsFromOpen`, `simTickCount`)
-   *   without ever mutating `this.state`.
-   */
   getViewState() {
     if (this.state.replayIndex !== -1 && this.state.replayViewState) {
       return {
@@ -150,9 +141,6 @@ class Store {
     return this.state;
   }
 
-  /**
-   * Subscribe to one or more granular event channels.
-   */
   subscribe(eventOrEvents, callback) {
     const events = Array.isArray(eventOrEvents) ? eventOrEvents : [eventOrEvents];
     events.forEach(ev => {
@@ -169,9 +157,6 @@ class Store {
     };
   }
 
-  /**
-   * Emit a granular event to subscribed listeners.
-   */
   emit(event, payload = null) {
     const set = this.listeners.get(event);
     if (set) {
@@ -180,9 +165,6 @@ class Store {
     }
   }
 
-  /**
-   * Load persisted user lists (watchlist, portfolio, alerts) from localStorage.
-   */
   loadPersistedState() {
     try {
       const w = localStorage.getItem('mv_watchlist');
@@ -209,17 +191,12 @@ class Store {
     }
   }
 
-  /**
-   * Persist user lists to localStorage.
-   */
   savePersistedState() {
     try {
       localStorage.setItem('mv_watchlist', JSON.stringify(this.state.watchlistIds));
       localStorage.setItem('mv_portfolio', JSON.stringify(this.state.portfolio));
       localStorage.setItem('mv_alerts', JSON.stringify(this.state.alerts));
-    } catch (e) {
-      // Ignore storage quota errors
-    }
+    } catch (e) {}
   }
 }
 

@@ -10,9 +10,6 @@ export let renderer = null;
 export let webglAvailable = false;
 export const interactiveMeshes = [];
 
-/**
- * Auto-detects optimal graphics quality tier based on device memory, CPU cores, and mobile screen.
- */
 export function detectHardwareQuality() {
   const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768;
   const cores = navigator.hardwareConcurrency || 4;
@@ -61,9 +58,9 @@ export function initScene() {
 
   try {
     const gl =
-      canvas.getContext('webgl2') ||
-      canvas.getContext('webgl') ||
-      canvas.getContext('experimental-webgl');
+      canvas.getContext('webgl2', { preserveDrawingBuffer: true }) ||
+      canvas.getContext('webgl', { preserveDrawingBuffer: true }) ||
+      canvas.getContext('experimental-webgl', { preserveDrawingBuffer: true });
     if (!gl) {
       throw new Error('WebGL context could not be created.');
     }
@@ -71,6 +68,7 @@ export function initScene() {
     renderer = new THREE.WebGLRenderer({
       canvas,
       antialias: true,
+      preserveDrawingBuffer: true,
       powerPreference: 'high-performance'
     });
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -84,6 +82,15 @@ export function initScene() {
     if (canvas) canvas.style.display = 'none';
     if (fallbackEl) fallbackEl.style.display = 'flex';
   }
+
+  window.addEventListener('resize', () => {
+    if (!camera) return;
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    if (renderer && webglAvailable) {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+  });
 
   return { scene, camera, renderer, webglAvailable };
 }

@@ -11,7 +11,7 @@
   white-space: nowrap;
   pointer-events: auto;
   cursor: pointer;
-  transition: border-color 0.15s, transform 0.15s;
+  transition: border-color 0.15s, transform 0.15s, opacity 0.2s;
   box-shadow: 0 2px 6px rgba(0,0,0,0.45);
   display: flex;
   align-items: center;
@@ -32,6 +32,148 @@
   font-size: 11px;
   letter-spacing: 0.03em;
   text-transform: uppercase;
+}
+
+/* Loading Screen Overlay */
+#loading-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: radial-gradient(circle at center, #18232D 0%, #0d151d 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.4s ease;
+}
+
+.loading-card {
+  width: 320px;
+  padding: 24px;
+  background: var(--bg-panel-solid);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+}
+
+.loading-bar-track {
+  width: 100%;
+  height: 6px;
+  background: var(--bg-input);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.loading-bar-fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, #4B8BE8, #3BAA91);
+  transition: width 0.2s ease;
+}
+
+/* Cinematic Fly-In Banner */
+#flyin-banner {
+  position: fixed;
+  bottom: calc(var(--bottompanel-h) + 52px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 45;
+  background: var(--bg-panel-solid);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  padding: 6px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.55);
+  font-weight: 600;
+}
+
+/* Hover Mini Tooltip */
+#hover-tooltip {
+  position: fixed;
+  z-index: 40;
+  pointer-events: none;
+  background: var(--bg-panel-solid);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 7px 10px;
+  min-width: 175px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.55);
+  transform: translate(14px, -50%);
+}
+
+/* 4-Step Onboarding Tour Card */
+#onboarding-card {
+  position: fixed;
+  bottom: calc(var(--bottompanel-h) + 54px);
+  left: calc(var(--leftnav-w) + 16px);
+  width: 310px;
+  z-index: 42;
+  background: var(--bg-panel-solid);
+  border: 1.5px solid var(--accent);
+  border-radius: 8px;
+  padding: 12px 14px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.65);
+}
+
+.onboarding-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* On-Screen Camera D-Pad */
+.cam-dpad {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--bg-panel);
+  backdrop-filter: blur(8px);
+  padding: 2px 4px;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+}
+
+.cam-dpad button {
+  padding: 3px 7px;
+  font-size: 11.5px;
+}
+
+/* Clickable 2D Minimap */
+#minimap-container {
+  position: fixed;
+  bottom: calc(var(--bottompanel-h) + 10px);
+  right: calc(var(--rightpanel-w) + 12px);
+  z-index: 19;
+  background: var(--bg-panel);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 5px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+  transition: right 0.25s ease, bottom 0.25s ease;
+}
+
+body.right-collapsed #minimap-container { right: 12px; }
+body.bottom-collapsed #minimap-container { bottom: 44px; }
+
+.minimap-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 3px;
+  padding: 0 2px;
+}
+
+#city-minimap {
+  display: block;
+  border-radius: 4px;
+  cursor: crosshair;
+  background: #0d151d;
 }
 
 .badge {
@@ -86,7 +228,6 @@
   gap: 6px;
 }
 
-/* Search Container */
 .search-wrapper {
   position: relative;
   flex: 1;
@@ -139,7 +280,7 @@
 .top-status-group {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-shrink: 0;
 }
 
@@ -493,7 +634,6 @@
   border-left-color: var(--neu);
 }
 
-/* Toast Notifications */
 #toast-container {
   position: fixed;
   bottom: 20px;

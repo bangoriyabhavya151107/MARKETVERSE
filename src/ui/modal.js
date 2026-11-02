@@ -1,5 +1,5 @@
 /**
- * Educational Concept Modal, Alerts Modal, and Settings Modal.
+ * Educational Concept Modal, Alerts Modal, Keyboard Shortcuts Modal, and Settings Modal.
  */
 import { FINANCIAL_LESSONS } from '../data/lessons.js';
 import { store } from '../state/store.js';
@@ -33,6 +33,34 @@ export function openConceptModal(conceptKey) {
     <div class="edu-block warn">
       <strong>What It Does NOT Tell You (Common Misconceptions)</strong>
       <p style="margin-top:4px;">${les.whatItDoesNotTell}</p>
+    </div>
+  `;
+  document.getElementById('modal-backdrop').style.display = 'flex';
+}
+
+export function openShortcutsModal() {
+  document.getElementById('modal-title').textContent = 'Keyboard, Mouse & Touch Controls';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="section-card">
+      <h4>Keyboard Shortcuts</h4>
+      <table class="data-table" style="font-size:12px;">
+        <tbody>
+          <tr><td><kbd class="badge">1</kbd> – <kbd class="badge">9</kbd>, <kbd class="badge">0</kbd></td><td>Switch Left Navigation Views 1 through 10</td></tr>
+          <tr><td><kbd class="badge">Space</kbd></td><td>Pause / Resume Live Market Simulation</td></tr>
+          <tr><td><kbd class="badge">F</kbd></td><td>Focus Camera on Selected Object (or Exchange)</td></tr>
+          <tr><td><kbd class="badge">Esc</kbd></td><td>Close Modal or Deselect Active Building/District</td></tr>
+          <tr><td><kbd class="badge">/</kbd></td><td>Focus Global Search Bar</td></tr>
+          <tr><td><kbd class="badge">?</kbd></td><td>Open this Keyboard Shortcuts Guide</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="section-card">
+      <h4>Mouse & Touch Gestures</h4>
+      <ul style="padding-left:16px; font-size:12px; display:flex; flex-direction:column; gap:6px;">
+        <li><strong>Mouse:</strong> Left-drag to Pan • Right-drag (or Shift+drag) to Orbit • Scroll Wheel to Zoom • Click to Select • Double-click to Zoom-Focus.</li>
+        <li><strong>Touch:</strong> 1-Finger drag to Orbit • 2-Finger drag to Pan + Pinch to Zoom • Tap to Select • Double-tap to Focus.</li>
+        <li><strong>Minimap & D-Pad:</strong> Click or drag anywhere on the bottom-right City Radar minimap or use the bottom-left on-screen camera buttons.</li>
+      </ul>
     </div>
   `;
   document.getElementById('modal-backdrop').style.display = 'flex';

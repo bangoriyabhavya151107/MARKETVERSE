@@ -1,5 +1,6 @@
 /**
- * Top Navigation Bar, 4 Summary Cards, Global Search, and Simulation/Replay Toolbar.
+ * Top Navigation Bar, 4 Summary Cards, Global Search, Screenshot/Tour/Shortcuts Triggers,
+ * and Simulation/Replay Toolbar.
  */
 import { store } from '../state/store.js';
 import { SECTORS } from '../data/sectors.js';
@@ -13,7 +14,8 @@ import { selectWorldObject, clearSelection } from '../controls/picking.js';
 import { applyCameraPreset } from '../controls/cameraRig.js';
 import { update3DCityFromState } from '../world/buildings.js';
 import { drawSparkline } from './charts.js';
-import { openConceptModal, openAlertsModal, openSettingsModal } from './modal.js';
+import { openConceptModal, openAlertsModal, openSettingsModal, openShortcutsModal } from './modal.js';
+import { startOnboardingTour, exportWatermarkedScreenshot } from './onboarding.js';
 import { switchLeftNavView } from './leftNav.js';
 import { showToast } from './toasts.js';
 
@@ -37,7 +39,6 @@ export function updateTopBarAndSummaryCards(viewState = store.getViewState()) {
     clockEl.textContent = formatSimClock(viewState.simSecondsFromOpen);
   }
 
-  // Update Replay Controls UI
   const slider = document.getElementById('replay-slider');
   const stepLbl = document.getElementById('replay-step-label');
   const liveBtn = document.getElementById('replay-live-btn');
@@ -54,7 +55,6 @@ export function updateTopBarAndSummaryCards(viewState = store.getViewState()) {
     }
   }
 
-  // Update Active Event & Decay UI
   const quickEvSel = document.getElementById('quick-event-select');
   const decayBadge = document.getElementById('event-decay-badge');
   const endEventBtn = document.getElementById('end-event-btn');
@@ -72,14 +72,11 @@ export function updateTopBarAndSummaryCards(viewState = store.getViewState()) {
     if (endEventBtn) endEventBtn.style.display = 'none';
   }
 
-  // Update Alert Badge
   const alertBadge = document.getElementById('alert-count-badge');
   if (alertBadge) alertBadge.textContent = viewState.triggeredAlerts.length;
 
-  // Update 4 Summary Cards
   const isRealUnconf = viewState.dataMode === 'REAL_DATA';
 
-  // 1. NIFTY
   const n = viewState.indices.NIFTY;
   document.getElementById('card-nifty-val').textContent = isRealUnconf
     ? 'Unavailable'
@@ -92,7 +89,6 @@ export function updateTopBarAndSummaryCards(viewState = store.getViewState()) {
     : `Base: ${n.baseLevel.toLocaleString('en-IN')} (${n.constituentCount} const.)`;
   drawSparkline('spark-nifty', n.history, n.changePercent >= 0 ? '#22A06B' : '#D94F52');
 
-  // 2. SENSEX
   const s = viewState.indices.SENSEX;
   document.getElementById('card-sensex-val').textContent = isRealUnconf
     ? 'Unavailable'
@@ -105,7 +101,6 @@ export function updateTopBarAndSummaryCards(viewState = store.getViewState()) {
     : `Base: ${s.baseLevel.toLocaleString('en-IN')} (${s.constituentCount} const.)`;
   drawSparkline('spark-sensex', s.history, s.changePercent >= 0 ? '#22A06B' : '#D94F52');
 
-  // 3. Total Market Cap
   const t = viewState.totals;
   document.getElementById('card-mcap-val').textContent = isRealUnconf ? 'Unavailable' : fmtMcapCr(t.mcapCr);
   const mBadge = document.getElementById('card-mcap-chg');
@@ -116,7 +111,6 @@ export function updateTopBarAndSummaryCards(viewState = store.getViewState()) {
   })`;
   drawSparkline('spark-mcap', t.mcapHistory, t.mcapChangePct >= 0 ? '#22A06B' : '#D94F52');
 
-  // 4. Volume & Mood
   document.getElementById('card-vol-val').textContent = isRealUnconf ? 'Unavailable' : `${t.volumeCr.toFixed(2)} Cr sh`;
   const moodBadge = document.getElementById('card-mood-badge');
   moodBadge.textContent = isRealUnconf ? 'UNAVAILABLE' : t.mood;
@@ -244,6 +238,15 @@ export function initTopBarEvents() {
   document.getElementById('alerts-top-btn').addEventListener('click', openAlertsModal);
   document.getElementById('settings-top-btn').addEventListener('click', openSettingsModal);
 
+  const tourBtn = document.getElementById('tour-top-btn');
+  if (tourBtn) tourBtn.addEventListener('click', startOnboardingTour);
+
+  const shotBtn = document.getElementById('screenshot-top-btn');
+  if (shotBtn) shotBtn.addEventListener('click', exportWatermarkedScreenshot);
+
+  const kbBtn = document.getElementById('shortcuts-top-btn');
+  if (kbBtn) kbBtn.addEventListener('click', openShortcutsModal);
+
   document.getElementById('toggle-left-btn').addEventListener('click', () => {
     document.body.classList.toggle('left-collapsed');
   });
@@ -278,7 +281,6 @@ export function initTopBarEvents() {
     });
   });
 
-  // Simulation & Replay Toolbar
   const playPauseBtn = document.getElementById('sim-play-pause-btn');
   playPauseBtn.addEventListener('click', () => {
     const live = store.getLiveState();

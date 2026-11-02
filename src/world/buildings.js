@@ -1,6 +1,6 @@
 /**
  * 36 Company Buildings — 10 Sector Architectural Languages, Procedural Window Facades,
- * Soft Contact Shadow Decals (AO), Night Emissive Window Glow, Base Mover Sparkline Rings,
+ * Soft Contact Shadow Decals (AO), Night Emissive Window Glow, Hover Lift & Outline Glow,
  * and Smooth Lerped Scale Transitions.
  */
 import * as THREE from 'three';
@@ -25,9 +25,6 @@ export function computeBuildingWidth(mcapCr, thresholds) {
   return tier === 'Large-Cap' ? 7.6 : tier === 'Mid-Cap' ? 6.4 : 5.4;
 }
 
-/**
- * Generates both diffuse and emissive window CanvasTextures so windows glow at night.
- */
 function createFacadeWindowTextures(sectorHex, litRatio = 0.55, seedOffset = 1) {
   const canvas = document.createElement('canvas');
   canvas.width = 128;
@@ -46,7 +43,6 @@ function createFacadeWindowTextures(sectorHex, litRatio = 0.55, seedOffset = 1) 
   emCtx.fillStyle = '#000000';
   emCtx.fillRect(0, 0, 128, 256);
 
-  // Subtle vertical bevel mullions
   ctx.fillStyle = 'rgba(10, 16, 24, 0.55)';
   ctx.fillRect(0, 0, 6, 256);
   ctx.fillRect(122, 0, 6, 256);
@@ -335,12 +331,10 @@ export function buildCompanyBuildings(companies) {
     const relVol = comp.volume / Math.max(1, comp.avgDailyVolume);
     const litRatio = Math.max(0.25, Math.min(0.92, 0.45 * relVol));
 
-    // 1. Soft Baked-Looking AO Contact Shadow Decal under Building
     const aoShadowMesh = createContactShadowMesh(width * 1.75, width * 1.75, 0.65);
     aoShadowMesh.position.y = 0.03;
     bGroup.add(aoShadowMesh);
 
-    // 2. Base Plinth
     const plinthGeo = new THREE.BoxGeometry(1.14, 0.6, 1.14);
     plinthGeo.translate(0, 0.3, 0);
     const plinthMesh = new THREE.Mesh(plinthGeo, plinthMat);
@@ -348,7 +342,6 @@ export function buildCompanyBuildings(companies) {
     plinthMesh.receiveShadow = true;
     bGroup.add(plinthMesh);
 
-    // 3. Procedural Facade Material (Diffuse + Emissive Window Map for Night Bloom)
     const { map, emissiveMap } = createFacadeWindowTextures(sec.hex, litRatio, idx + 1);
     const bodyMat = new THREE.MeshPhongMaterial({
       map,
@@ -376,7 +369,6 @@ export function buildCompanyBuildings(companies) {
     roofGroup.scale.set(width, 1, width);
     bGroup.add(roofGroup);
 
-    // 4. Dedicated Raycast Hitbox
     const hitGeo = new THREE.BoxGeometry(1.05, 1, 1.05);
     hitGeo.translate(0, 0.5, 0);
     const hitMesh = new THREE.Mesh(hitGeo, new THREE.MeshBasicMaterial({ visible: false }));
@@ -385,7 +377,6 @@ export function buildCompanyBuildings(companies) {
     bGroup.add(hitMesh);
     interactiveMeshes.push(hitMesh);
 
-    // 5. Price-Movement Status Beacon on Roof
     const beaconGeo = new THREE.BoxGeometry(0.76, 0.85, 0.76);
     const beaconMat = new THREE.MeshBasicMaterial({ color: 0x22a06b });
     const beaconMesh = new THREE.Mesh(beaconGeo, beaconMat);
@@ -393,7 +384,6 @@ export function buildCompanyBuildings(companies) {
     beaconMesh.scale.set(width, 1, width);
     bGroup.add(beaconMesh);
 
-    // 6. Trading-Activity Base Ring
     const ringGeo = new THREE.RingGeometry(0.62, 0.76, 24);
     ringGeo.rotateX(-Math.PI / 2);
     const ringMat = new THREE.MeshBasicMaterial({
@@ -407,7 +397,6 @@ export function buildCompanyBuildings(companies) {
     ringMesh.scale.set(width, 1, width);
     bGroup.add(ringMesh);
 
-    // 7. Selection Outline Wireframe
     const selEdges = new THREE.EdgesGeometry(new THREE.BoxGeometry(1.16, 1, 1.16));
     selEdges.translate(0, 0.5, 0);
     const selMat = new THREE.LineBasicMaterial({ color: 0xffffff });
@@ -432,10 +421,13 @@ export function buildCompanyBuildings(companies) {
       ringMesh,
       ringMat,
       selectionBox,
+      selMat,
       currentWidth: width,
       goalWidth: width,
       currentHeight: h,
       goalHeight: h,
+      currentLiftY: 0,
+      goalLiftY: 0,
       height: h,
       lastLitBucket: Math.round(litRatio * 10),
       isLargeMover: false,
@@ -512,12 +504,19 @@ export function update3DCityFromState(viewState) {
 
     const isSelected =
       viewState.selectedObject && viewState.selectedObject.type === 'COMPANY' && viewState.selectedObject.id === c.id;
+    const isHovered =
+      viewState.hoveredObject && viewState.hoveredObject.type === 'COMPANY' && viewState.hoveredObject.id === c.id;
     const isCompared = viewState.activeNavView === 'compare' && viewState.compareIds.includes(c.id);
     const isInSelectedSector =
       viewState.selectedObject && viewState.selectedObject.type === 'SECTOR' && viewState.selectedObject.id === c.sector;
     const matchesExchange = viewState.exchangeFilter === 'ALL' || c.exchange === viewState.exchangeFilter;
 
-    b3d.selectionBox.visible = Boolean(isSelected || isCompared || isInSelectedSector);
+    b3d.goalLiftY = isHovered ? 1.15 : 0;
+    b3d.selectionBox.visible = Boolean(isSelected || isHovered || isCompared || isInSelectedSector);
+    if (b3d.selMat) {
+      b3d.selMat.color.setHex(isSelected ? 0xffffff : isHovered ? 0x5ec2d6 : 0x9ec5ff);
+    }
+
     b3d.bodyMat.opacity = matchesExchange ? 1.0 : 0.25;
     b3d.bodyMat.transparent = !matchesExchange;
     b3d.accentMat.opacity = matchesExchange ? 1.0 : 0.25;
@@ -525,8 +524,8 @@ export function update3DCityFromState(viewState) {
 
     updateCompanyLabelAnchor(
       c,
-      b3d.currentHeight,
-      isSelected || isCompared,
+      b3d.currentHeight + b3d.currentLiftY,
+      isSelected || isCompared || isHovered,
       viewState.labelsVisible && matchesExchange
     );
   });
@@ -534,6 +533,7 @@ export function update3DCityFromState(viewState) {
 
 export function updateBuildingPulses(liveCompanies, dt, viewState) {
   const lerpSpeed = Math.min(1, dt * 6.5);
+  const liftSpeed = Math.min(1, dt * 12.0);
 
   liveCompanies.forEach(c => {
     const b3d = company3DMap[c.id];
@@ -541,31 +541,44 @@ export function updateBuildingPulses(liveCompanies, dt, viewState) {
 
     const dh = Math.abs(b3d.goalHeight - b3d.currentHeight);
     const dw = Math.abs(b3d.goalWidth - b3d.currentWidth);
-    if (dh > 0.01 || dw > 0.01) {
+    const dl = Math.abs(b3d.goalLiftY - b3d.currentLiftY);
+
+    if (dh > 0.01 || dw > 0.01 || dl > 0.01) {
       b3d.currentHeight += (b3d.goalHeight - b3d.currentHeight) * lerpSpeed;
       b3d.currentWidth += (b3d.goalWidth - b3d.currentWidth) * lerpSpeed;
+      b3d.currentLiftY += (b3d.goalLiftY - b3d.currentLiftY) * liftSpeed;
       b3d.height = b3d.currentHeight;
 
       const w = b3d.currentWidth;
       const h = b3d.currentHeight;
+      const lift = b3d.currentLiftY;
 
       b3d.aoShadowMesh.scale.set(w * 1.75, 1, w * 1.75);
       b3d.plinthMesh.scale.set(w, 1, w);
+      b3d.archGroup.position.y = 0.6 + lift;
       b3d.archGroup.scale.set(w, h, w);
-      b3d.roofGroup.position.y = h + 0.6;
+      b3d.roofGroup.position.y = h + 0.6 + lift;
       b3d.roofGroup.scale.set(w, 1, w);
-      b3d.hitMesh.scale.set(w, h + 1.2, w);
-      b3d.beaconMesh.position.y = h + 0.95;
+      b3d.hitMesh.scale.set(w, h + 1.2 + lift, w);
+      b3d.beaconMesh.position.y = h + 0.95 + lift;
       b3d.beaconMesh.scale.set(w, 1, w);
       b3d.ringMesh.scale.set(w, 1, w);
+      b3d.selectionBox.position.y = lift;
       b3d.selectionBox.scale.set(w, h + 2.8, w);
 
       if (viewState) {
         const isSelected =
           viewState.selectedObject && viewState.selectedObject.type === 'COMPANY' && viewState.selectedObject.id === c.id;
+        const isHovered =
+          viewState.hoveredObject && viewState.hoveredObject.type === 'COMPANY' && viewState.hoveredObject.id === c.id;
         const isCompared = viewState.activeNavView === 'compare' && viewState.compareIds.includes(c.id);
         const matchesExchange = viewState.exchangeFilter === 'ALL' || c.exchange === viewState.exchangeFilter;
-        updateCompanyLabelAnchor(c, h, isSelected || isCompared, viewState.labelsVisible && matchesExchange);
+        updateCompanyLabelAnchor(
+          c,
+          h + lift,
+          isSelected || isCompared || isHovered,
+          viewState.labelsVisible && matchesExchange
+        );
       }
     }
 

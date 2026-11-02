@@ -18,21 +18,20 @@ import { initPostFX, renderFrame } from './world/postfx.js';
 import { setLabelSelectHandler, updateWorldLabelsProjection } from './world/labels.js';
 import { camRig, updateCameraImmediate, updateCameraRig } from './controls/cameraRig.js';
 import { selectWorldObject } from './controls/picking.js';
-import { setupViewportControls } from './controls/touch.js';
+import { setupViewportControls, updateMinimap } from './controls/touch.js';
 import { initTopBarEvents, updateTopBarAndSummaryCards } from './ui/topbar.js';
 import { initLeftNavEvents } from './ui/leftNav.js';
 import { mountInspectorPanel, updateInspectorPanelOnTick } from './ui/inspector/index.js';
 import { initBottomPanelEvents, mountBottomPanel, updateBottomPanelOnTick } from './ui/bottomPanel.js';
 import { initModalEvents } from './ui/modal.js';
-import { initDynamicCountLabels } from './ui/onboarding.js';
+import { initDynamicCountLabels, setLoadingProgress, finishLoadingAndStartIntro } from './ui/onboarding.js';
 
 function boot() {
-  // 1. Load persisted user state & initialize deterministic market dataset
+  setLoadingProgress(15, 'Loading Seeded Indian Market Dataset...');
   store.loadPersistedState();
   initDataset();
   initDynamicCountLabels(store.getViewState().companies);
 
-  // Listen to OS prefers-reduced-motion changes
   if (window.matchMedia) {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
     mq.addEventListener('change', e => {
@@ -41,13 +40,15 @@ function boot() {
     });
   }
 
-  // 2. Initialize 3D Scene, Post-Processing & City World (with graceful WebGL fallback)
+  setLoadingProgress(40, 'Constructing 3D Exchange & Sector Districts...');
   setLabelSelectHandler(selectWorldObject);
   initScene();
   buildLighting();
   buildGroundAndRoadNetwork();
   buildCentralExchangeComplex();
   buildSectorDistricts();
+
+  setLoadingProgress(70, 'Building Company Towers & Learning Landmarks...');
   buildCompanyBuildings(store.getViewState().companies);
   buildInfrastructureDistrict();
   buildLearningDistrict();
@@ -59,14 +60,13 @@ function boot() {
   update3DCityFromState(store.getViewState());
   updateCameraImmediate();
 
-  // 3. Wire Controls & UI Modules
+  setLoadingProgress(90, 'Wiring Interactive Controls & Analytics...');
   setupViewportControls();
   initTopBarEvents();
   initLeftNavEvents();
   initBottomPanelEvents();
   initModalEvents();
 
-  // 4. Subscribe UI & 3D World to Granular Store Channels
   store.subscribe(
     ['selection', 'nav', 'settings', 'watchlist', 'portfolio', 'compare', 'whatif'],
     viewState => {
@@ -85,7 +85,6 @@ function boot() {
     updateTopBarAndSummaryCards(viewState);
   });
 
-  // On 'tick' and 'replay', patch keyed DOM nodes in the Inspector without destroying focused inputs
   store.subscribe(['tick', 'replay'], viewState => {
     update3DCityFromState(viewState);
     updateTopBarAndSummaryCards(viewState);
@@ -93,13 +92,13 @@ function boot() {
     updateBottomPanelOnTick(viewState);
   });
 
-  // Initial UI render
   const initialView = store.getViewState();
   updateTopBarAndSummaryCards(initialView);
   mountInspectorPanel(initialView);
   mountBottomPanel(initialView);
 
-  // 5. Start Main Animation & Simulation Loop
+  finishLoadingAndStartIntro();
+
   let lastFrameTime = performance.now();
   let simAccumulator = 0;
 
@@ -115,7 +114,6 @@ function boot() {
     const liveState = store.getLiveState();
     const viewState = store.getViewState();
 
-    // Advance live simulation every 2.6s at 1x speed when running in Live mode
     if (liveState.simRunning && liveState.dataMode === 'SIMULATION' && liveState.replayIndex === -1) {
       simAccumulator += dt * liveState.simSpeed;
       if (simAccumulator >= 2.6) {
@@ -136,9 +134,9 @@ function boot() {
 
     renderFrame(camRig.target);
     updateWorldLabelsProjection();
+    updateMinimap();
   }
 
   requestAnimationFrame(animate);
 }
-
 window.addEventListener('DOMContentLoaded', boot);

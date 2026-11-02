@@ -11,10 +11,28 @@
 </head>
 <body>
 
+  <!-- LOADING SCREEN & CINEMATIC FLY-IN BANNER -->
+  <div id="loading-screen" role="status" aria-live="polite">
+    <div class="loading-card">
+      <div class="brand-logo" style="justify-content:center; font-size:20px; margin-bottom:10px;">
+        <span class="brand-cube" style="width:28px; height:28px; font-size:15px;">M</span>
+        <span>MARKETVERSE</span>
+      </div>
+      <div id="loading-status-text" style="color:var(--text-secondary); font-size:12.5px; margin-bottom:10px;">Initializing 3D Financial City...</div>
+      <div class="loading-bar-track">
+        <div id="loading-bar-fill" class="loading-bar-fill"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="flyin-banner" style="display:none;">
+    <span>🎬 Cinematic City Fly-In</span>
+    <button id="skip-flyin-btn" class="primary">Skip Intro ⏭</button>
+  </div>
+
   <!-- 3D CITY VIEWPORT -->
   <div id="viewport-container">
     <canvas id="city-canvas" aria-label="MarketVerse Interactive 3D Financial City"></canvas>
-    <!-- Friendly WebGL Error Fallback (hidden unless WebGL fails) -->
     <div id="webgl-fallback" class="webgl-fallback" style="display: none;" role="alert">
       <div class="webgl-fallback-card">
         <h2>3D City View Unavailable on This Device</h2>
@@ -25,6 +43,23 @@
 
   <!-- FLOATING 3D LABELS OVERLAY -->
   <div id="world-labels"></div>
+
+  <!-- HOVER MINI TOOLTIP -->
+  <div id="hover-tooltip" style="display:none;" role="tooltip"></div>
+
+  <!-- 4-STEP ONBOARDING TOUR CARD -->
+  <div id="onboarding-card" style="display:none;" role="dialog" aria-label="MarketVerse Onboarding Tour">
+    <div class="onboarding-header">
+      <span id="onboarding-step-badge" class="badge sim">Step 1 of 4</span>
+      <button id="onboarding-close-btn" title="Exit Tour" style="padding:2px 6px; font-size:11px;">✕ Skip</button>
+    </div>
+    <h4 id="onboarding-title" style="margin:6px 0 4px; font-size:14px;">Welcome to MarketVerse</h4>
+    <p id="onboarding-desc" style="font-size:12px; color:var(--text-secondary); margin-bottom:10px;"></p>
+    <div style="display:flex; justify-content:space-between; gap:6px;">
+      <button id="onboarding-prev-btn">← Prev</button>
+      <button id="onboarding-next-btn" class="primary">Next →</button>
+    </div>
+  </div>
 
   <!-- TOAST NOTIFICATIONS CONTAINER -->
   <div id="toast-container" aria-live="polite"></div>
@@ -50,7 +85,7 @@
     </div>
 
     <div class="search-wrapper">
-      <input type="text" id="global-search" placeholder="Search company, ticker, sector, or concept (e.g. P/E, IT)..." aria-label="Search companies, sectors, or financial concepts" autocomplete="off" />
+      <input type="text" id="global-search" placeholder="Search company, ticker, sector, or concept (Press '/' to focus)..." aria-label="Search companies, sectors, or financial concepts" autocomplete="off" />
       <div id="search-results" role="listbox"></div>
     </div>
 
@@ -68,6 +103,9 @@
 
       <button id="edu-mode-btn" title="Toggle Beginner / Advanced Metrics Mode">Mode: <span id="edu-mode-label">Beginner</span></button>
       <button id="alerts-top-btn" title="View Educational Market Alerts">Alerts <span id="alert-count-badge" class="badge sim">0</span></button>
+      <button id="tour-top-btn" title="Start 4-Step City Guide Tour">🎓 Tour</button>
+      <button id="screenshot-top-btn" title="Export Watermarked City Screenshot">📷</button>
+      <button id="shortcuts-top-btn" title="Keyboard Shortcuts Help (?)">⌨</button>
       <button id="settings-top-btn" title="Environment, Weather & Accessibility Settings">⚙</button>
       <button id="toggle-right-btn" title="Toggle Inspector Panel">Inspector ▤</button>
     </div>
@@ -127,7 +165,6 @@
   <!-- TOP OVERLAY: 4 PRIMARY SUMMARY CARDS + SIMULATION & REPLAY BAR -->
   <section id="top-overlay" aria-label="Market Summary Cards">
     <div class="summary-cards-row">
-      <!-- Card 1: Simulated NIFTY 50 -->
       <div class="summary-card" data-summary-card="NIFTY">
         <div class="card-header">
           <span>NIFTY 50 <span class="badge sim">SIM</span></span>
@@ -143,7 +180,6 @@
         </div>
       </div>
 
-      <!-- Card 2: Simulated SENSEX -->
       <div class="summary-card" data-summary-card="SENSEX">
         <div class="card-header">
           <span>SENSEX <span class="badge sim">SIM</span></span>
@@ -159,7 +195,6 @@
         </div>
       </div>
 
-      <!-- Card 3: Total Dataset Market Cap -->
       <div class="summary-card" data-summary-card="MCAP">
         <div class="card-header">
           <span>City Dataset M-Cap</span>
@@ -175,7 +210,6 @@
         </div>
       </div>
 
-      <!-- Card 4: Total Dataset Volume & Mood -->
       <div class="summary-card" data-summary-card="VOL">
         <div class="card-header">
           <span>Dataset Volume & Mood</span>
@@ -195,7 +229,7 @@
     <!-- Simulation & Replay Controls Bar -->
     <div class="sim-toolbar">
       <div class="sim-controls-group">
-        <button id="sim-play-pause-btn" class="primary" title="Pause or Resume Live Simulation">⏸ Pause</button>
+        <button id="sim-play-pause-btn" class="primary" title="Pause or Resume Live Simulation (Space)">⏸ Pause</button>
         <button class="sim-speed-btn" data-speed="0.5">0.5×</button>
         <button class="sim-speed-btn active" data-speed="1">1×</button>
         <button class="sim-speed-btn" data-speed="3">3×</button>
@@ -227,10 +261,28 @@
     </div>
   </section>
 
-  <!-- FLOATING VIEWPORT TOGGLES -->
+  <!-- FLOATING VIEWPORT TOGGLES, ACCESSIBLE CAMERA D-PAD & CLICKABLE MINIMAP -->
   <div id="viewport-toggles">
     <button id="fullscreen-city-btn" title="Collapse or Restore All Panels to Inspect Full 3D City">⛶ Expand 3D City</button>
     <button id="reset-cam-btn" title="Reset Camera to Entire Market View">🎯 Reset Camera</button>
+    <div class="cam-dpad" role="group" aria-label="On-Screen Camera Rotate and Zoom Controls">
+      <button id="cam-rot-left-btn" title="Orbit Left">↺</button>
+      <button id="cam-rot-right-btn" title="Orbit Right">↻</button>
+      <button id="cam-tilt-up-btn" title="Tilt Camera Up">↑</button>
+      <button id="cam-tilt-down-btn" title="Tilt Camera Down">↓</button>
+      <button id="cam-zoom-in-btn" title="Zoom In">+</button>
+      <button id="cam-zoom-out-btn" title="Zoom Out">−</button>
+      <button id="cam-idle-toggle-btn" title="Toggle Gentle Auto-Orbit">⟳ Orbit</button>
+    </div>
+  </div>
+
+  <!-- CLICKABLE 2D CITY MINIMAP -->
+  <div id="minimap-container" title="Click or drag to move camera across districts">
+    <div class="minimap-header">
+      <span>CITY RADAR</span>
+      <button id="minimap-toggle-btn" style="padding:0 4px; font-size:10px; border:none; background:transparent;">−</button>
+    </div>
+    <canvas id="city-minimap" width="150" height="145" aria-label="Clickable 2D City Minimap"></canvas>
   </div>
 
   <!-- RIGHT INSPECTOR / CONTEXTUAL DETAIL PANEL -->
@@ -262,7 +314,7 @@
     <div class="bottom-content" id="bottom-content"></div>
   </section>
 
-  <!-- MODAL FOR "UNDERSTAND THIS" LESSONS & SETTINGS -->
+  <!-- MODAL FOR "UNDERSTAND THIS" LESSONS, SHORTCUTS & SETTINGS -->
   <div id="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="modal-card">
       <div class="panel-header">
