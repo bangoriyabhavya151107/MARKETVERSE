@@ -20,10 +20,11 @@ class Store {
       activeNavView: 'overview',
       activeBottomTab: 'companies',
       activeHistoryHorizon: '1D',
+      companyInspectorTab: 'snapshot', // 'snapshot' | 'chart' | 'learn'
       tableSort: { col: 'marketCap', asc: false },
       tableFilter: '',
-      selectedObject: null, // { type: 'COMPANY'|'SECTOR'|'EXCHANGE'|'INFRA'|'LEARN', id: string }
-      hoveredObject: null,  // { type: 'COMPANY'|'SECTOR'|'EXCHANGE'|'INFRA'|'LEARN', id: string }
+      selectedObject: null,
+      hoveredObject: null,
 
       // User Tools State
       compareIds: ['C01', 'C06', 'C11'],

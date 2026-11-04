@@ -1,7 +1,7 @@
 /**
  * Bottom Panel: Companies Table, Sectors Table, Indices Table, Economic Events Table,
- * and Multi-Horizon Historical Chart.
- * Uses dynamic constituent counts and separates "End Event" from "Reset Simulation".
+ * and Interactive Multi-Horizon Chart.
+ * Includes full keyboard navigation (ArrowUp/ArrowDown/Enter) and empty/unavailable states.
  */
 import { store } from '../state/store.js';
 import { SECTORS, SECTOR_MAP } from '../data/sectors.js';
@@ -12,6 +12,7 @@ import { fmtPrice, fmtPct, fmtMcapCr } from '../utils/format.js';
 import { selectWorldObject } from '../controls/picking.js';
 import { update3DCityFromState } from '../world/buildings.js';
 import { mountHistoricalChart, updateHistoricalChart } from './charts.js';
+import { renderEventsPopoverList } from './topbar.js';
 import { switchLeftNavView } from './leftNav.js';
 import { showToast } from './toasts.js';
 
@@ -20,9 +21,32 @@ export function syncBottomTabButtons() {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.btab === activeTab));
 }
 
+function wireTableKeyboardNavigation(container) {
+  const rows = Array.from(container.querySelectorAll('tbody tr[tabindex="0"]'));
+  rows.forEach((tr, idx) => {
+    tr.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        tr.click();
+      } else if (e.key === 'ArrowDown' && idx < rows.length - 1) {
+        e.preventDefault();
+        rows[idx + 1].focus();
+      } else if (e.key === 'ArrowUp' && idx > 0) {
+        e.preventDefault();
+        rows[idx - 1].focus();
+      }
+    });
+  });
+}
+
 export function mountBottomPanel(viewState = store.getViewState()) {
   const container = document.getElementById('bottom-content');
   if (!container) return;
+
+  if (viewState.dataMode === 'REAL_DATA') {
+    container.innerHTML = `<div class="edu-block warn">Real-Data Adapter Mode is selected without a configured NSE/BSE provider endpoint. Switch back to <strong>Sim Mode</strong> in the top bar to view live simulated tables and charts.</div>`;
+    return;
+  }
 
   const q = viewState.tableFilter.trim().toLowerCase();
 
@@ -37,6 +61,11 @@ export function mountBottomPanel(viewState = store.getViewState()) {
       );
     });
 
+    if (rows.length === 0) {
+      container.innerHTML = `<div class="edu-block warn">No companies match filter "${viewState.tableFilter}". Clear the filter box above to see all listed companies.</div>`;
+      return;
+    }
+
     const { col, asc } = viewState.tableSort;
     rows.sort((a, b) => {
       const va = a[col];
@@ -48,18 +77,18 @@ export function mountBottomPanel(viewState = store.getViewState()) {
     });
 
     container.innerHTML = `
-      <table class="data-table">
+      <table class="data-table" aria-label="Listed Companies Table">
         <thead>
           <tr>
-            <th data-sort-col="symbol">Ticker</th>
-            <th data-sort-col="companyName">Company Name</th>
-            <th data-sort-col="sector">Sector</th>
-            <th data-sort-col="exchange">Exch</th>
-            <th data-sort-col="price">Price (₹)</th>
-            <th data-sort-col="changePercent">Change (%)</th>
-            <th data-sort-col="marketCap">Market Cap</th>
-            <th data-sort-col="volume">Volume</th>
-            ${!viewState.beginnerMode ? `<th data-sort-col="pe">P/E</th><th data-sort-col="divYield">Div Yield</th>` : ''}
+            <th data-sort-col="symbol" tabindex="0">Ticker</th>
+            <th data-sort-col="companyName" tabindex="0">Company Name</th>
+            <th data-sort-col="sector" tabindex="0">Sector</th>
+            <th data-sort-col="exchange" tabindex="0">Exch</th>
+            <th data-sort-col="price" tabindex="0">Price (₹)</th>
+            <th data-sort-col="changePercent" tabindex="0">Change (%)</th>
+            <th data-sort-col="marketCap" tabindex="0">Market Cap</th>
+            <th data-sort-col="volume" tabindex="0">Volume</th>
+            ${!viewState.beginnerMode ? `<th data-sort-col="pe" tabindex="0">P/E</th><th data-sort-col="divYield" tabindex="0">Div Yield</th>` : ''}
           </tr>
         </thead>
         <tbody>
@@ -69,7 +98,7 @@ export function mountBottomPanel(viewState = store.getViewState()) {
                 viewState.selectedObject && viewState.selectedObject.type === 'COMPANY' && viewState.selectedObject.id === c.id;
               const sec = SECTOR_MAP[c.sector];
               return `
-                <tr class="${isSel ? 'selected-row' : ''}" data-comp-row="${c.id}">
+                <tr tabindex="0" class="${isSel ? 'selected-row' : ''}" data-comp-row="${c.id}">
                   <td style="font-weight:700;">${c.symbol}</td>
                   <td>${c.companyName}</td>
                   <td><span style="color:${sec.color}; font-weight:600;">${sec.short}</span></td>
@@ -95,7 +124,7 @@ export function mountBottomPanel(viewState = store.getViewState()) {
     `;
 
     container.querySelectorAll('[data-sort-col]').forEach(th => {
-      th.addEventListener('click', () => {
+      const sortFn = () => {
         const colName = th.dataset.sortCol;
         const live = store.getLiveState();
         if (live.tableSort.col === colName) {
@@ -105,15 +134,23 @@ export function mountBottomPanel(viewState = store.getViewState()) {
           live.tableSort.asc = colName === 'symbol' || colName === 'companyName';
         }
         mountBottomPanel(store.getViewState());
+      };
+      th.addEventListener('click', sortFn);
+      th.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          sortFn();
+        }
       });
     });
 
     container.querySelectorAll('[data-comp-row]').forEach(tr => {
       tr.addEventListener('click', () => selectWorldObject('COMPANY', tr.dataset.compRow, true));
     });
+    wireTableKeyboardNavigation(container);
   } else if (viewState.activeBottomTab === 'sectors') {
     container.innerHTML = `
-      <table class="data-table">
+      <table class="data-table" aria-label="Sector Districts Table">
         <thead>
           <tr>
             <th>Sector District</th>
@@ -130,7 +167,7 @@ export function mountBottomPanel(viewState = store.getViewState()) {
             const st = getSectorStats(s.id, viewState);
             const wt = viewState.totals.mcapCr > 0 ? ((st.totalMcap / viewState.totals.mcapCr) * 100).toFixed(2) : '0.00';
             return `
-              <tr data-sec-row="${s.id}">
+              <tr tabindex="0" data-sec-row="${s.id}">
                 <td style="font-weight:700; color:${s.color};">■ ${s.name}</td>
                 <td class="num">${st.companies.length}</td>
                 <td class="num">${fmtMcapCr(st.totalMcap)}</td>
@@ -148,11 +185,12 @@ export function mountBottomPanel(viewState = store.getViewState()) {
     container.querySelectorAll('[data-sec-row]').forEach(tr => {
       tr.addEventListener('click', () => selectWorldObject('SECTOR', tr.dataset.secRow, true));
     });
+    wireTableKeyboardNavigation(container);
   } else if (viewState.activeBottomTab === 'indices') {
     const n = viewState.indices.NIFTY;
     const s = viewState.indices.SENSEX;
     container.innerHTML = `
-      <table class="data-table">
+      <table class="data-table" aria-label="Market Indices Table">
         <thead>
           <tr>
             <th>Benchmark / Sector Index</th>
@@ -164,7 +202,7 @@ export function mountBottomPanel(viewState = store.getViewState()) {
           </tr>
         </thead>
         <tbody>
-          <tr class="idx-nav-row">
+          <tr tabindex="0" class="idx-nav-row">
             <td style="font-weight:700;">NIFTY 50 (City Basket)</td>
             <td>Cap-Weighted (${n.constituentCount} City Constituents)</td>
             <td class="num">${n.current.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
@@ -172,7 +210,7 @@ export function mountBottomPanel(viewState = store.getViewState()) {
             <td class="num ${n.changePercent >= 0 ? 'pos-text' : 'neg-text'}">${fmtPct(n.changePercent)}</td>
             <td><span class="badge sim">SIMULATED</span></td>
           </tr>
-          <tr class="idx-nav-row">
+          <tr tabindex="0" class="idx-nav-row">
             <td style="font-weight:700;">SENSEX (City Basket)</td>
             <td>Cap-Weighted (${s.constituentCount} City Constituents)</td>
             <td class="num">${s.current.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
@@ -185,7 +223,7 @@ export function mountBottomPanel(viewState = store.getViewState()) {
               const st = getSectorStats(sec.id, viewState);
               const lvl = (10000 * (1 + st.capWeightedChangePct / 100)).toFixed(2);
               return `
-                <tr data-sec-row="${sec.id}">
+                <tr tabindex="0" data-sec-row="${sec.id}">
                   <td style="font-weight:600; color:${sec.color};">MarketVerse ${sec.short} Index</td>
                   <td>Sector Cap-Weighted (${st.companies.length} Constituents)</td>
                   <td class="num">${Number(lvl).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
@@ -206,10 +244,11 @@ export function mountBottomPanel(viewState = store.getViewState()) {
     container.querySelectorAll('[data-sec-row]').forEach(tr => {
       tr.addEventListener('click', () => selectWorldObject('SECTOR', tr.dataset.secRow, true));
     });
+    wireTableKeyboardNavigation(container);
   } else if (viewState.activeBottomTab === 'events') {
     container.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px; flex-wrap:wrap;">
-        <div style="font-size:12px; color:var(--text-secondary);">
+        <div style="font-size:var(--text-sm); color:var(--text-secondary);">
           Active Scenario: <strong>${ECONOMIC_EVENTS[viewState.activeEventId]?.name || 'None'}</strong>
           ${viewState.eventRemainingTicks > 0 ? `<span class="badge sim" style="margin-left:6px;">Decay: ${viewState.eventRemainingTicks} ticks remaining</span>` : ''}
         </div>
@@ -218,7 +257,7 @@ export function mountBottomPanel(viewState = store.getViewState()) {
           <button id="btab-reset-sim-btn">↺ Reset Full Simulation</button>
         </div>
       </div>
-      <table class="data-table">
+      <table class="data-table" aria-label="Hypothetical Economic Events Table">
         <thead>
           <tr>
             <th>Hypothetical Economic Event</th>
@@ -256,12 +295,14 @@ export function mountBottomPanel(viewState = store.getViewState()) {
     container.querySelector('#btab-end-event-btn').addEventListener('click', () => {
       endActiveEvent();
       update3DCityFromState(store.getViewState());
+      renderEventsPopoverList(store.getViewState());
       showToast('Active event ended without resetting simulation.');
     });
 
     container.querySelector('#btab-reset-sim-btn').addEventListener('click', () => {
       resetFullSimulation();
       update3DCityFromState(store.getViewState());
+      renderEventsPopoverList(store.getViewState());
       showToast('Simulation reset to initial seed state.');
     });
 
@@ -270,10 +311,13 @@ export function mountBottomPanel(viewState = store.getViewState()) {
         const evId = btn.dataset.triggerEv;
         if (evId === 'NONE') {
           endActiveEvent();
+          showToast('Active event ended.');
         } else {
           applyEconomicEvent(evId);
+          showToast(`⚡ Event triggered: ${ECONOMIC_EVENTS[evId].name}`);
         }
         update3DCityFromState(store.getViewState());
+        renderEventsPopoverList(store.getViewState());
       });
     });
   } else if (viewState.activeBottomTab === 'history') {

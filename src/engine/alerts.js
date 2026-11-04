@@ -1,9 +1,10 @@
 /**
- * Educational market alert evaluation.
+ * Educational market alert evaluation with live Toast Notifications.
  */
 import { store } from '../state/store.js';
 import { SECTOR_MAP } from '../data/sectors.js';
 import { fmtPct } from '../utils/format.js';
+import { showToast } from '../ui/toasts.js';
 
 export function checkEducationalAlerts(liveState = store.getLiveState()) {
   let newlyTriggered = false;
@@ -17,6 +18,7 @@ export function checkEducationalAlerts(liveState = store.getLiveState()) {
           liveState.triggeredAlerts.unshift(msg);
           if (liveState.triggeredAlerts.length > 15) liveState.triggeredAlerts.pop();
           newlyTriggered = true;
+          showToast(`🔔 Alert: ${c.symbol} moved ${fmtPct(c.changePercent)}`);
         }
       }
     } else if (al.type === 'SECTOR_PCT') {
@@ -35,6 +37,7 @@ export function checkEducationalAlerts(liveState = store.getLiveState()) {
           liveState.triggeredAlerts.unshift(msg);
           if (liveState.triggeredAlerts.length > 15) liveState.triggeredAlerts.pop();
           newlyTriggered = true;
+          showToast(`🔔 Sector Alert: ${sector.short} ${fmtPct(capWeightedChangePct)}`);
         }
       }
     }

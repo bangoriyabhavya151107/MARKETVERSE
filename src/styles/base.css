@@ -11,8 +11,8 @@ html, body {
   background-color: var(--bg-main);
   color: var(--text-primary);
   font-family: var(--font-sans);
-  font-size: 13px;
-  line-height: 1.4;
+  font-size: var(--text-md);
+  line-height: 1.45;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -23,7 +23,7 @@ html, body {
 
 button, select, input {
   font-family: inherit;
-  font-size: inherit;
+  font-size: var(--text-md);
   color: inherit;
 }
 
@@ -31,19 +31,27 @@ button {
   cursor: pointer;
   border: 1px solid var(--border-subtle);
   background: var(--bg-elevated);
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   padding: 5px 10px;
   transition: background 0.15s, border-color 0.15s, transform 0.08s;
 }
 
-button:hover {
-  border-color: var(--text-secondary);
-  background: rgba(75, 139, 232, 0.2);
+button:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--accent-bg);
 }
 
-button:focus-visible, select:focus-visible, input:focus-visible {
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+[tabindex]:focus-visible {
   outline: 2px solid var(--border-focus);
-  outline-offset: 1px;
+  outline-offset: 2px;
 }
 
 button.primary {
@@ -53,7 +61,7 @@ button.primary {
   font-weight: 600;
 }
 
-button.primary:hover {
+button.primary:hover:not(:disabled) {
   background: #3a78d2;
 }
 
@@ -67,7 +75,7 @@ button.active {
 select, input[type="text"], input[type="number"] {
   background: var(--bg-input);
   border: 1px solid var(--border-subtle);
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   padding: 5px 8px;
   color: var(--text-primary);
 }
@@ -75,3 +83,9 @@ select, input[type="text"], input[type="number"] {
 .pos-text { color: var(--pos) !important; }
 .neg-text { color: var(--neg) !important; }
 .neu-text { color: var(--neu) !important; }
+
+@media (max-width: 768px) {
+  button, select, input[type="text"], input[type="number"] {
+    min-height: 40px;
+  }
+}

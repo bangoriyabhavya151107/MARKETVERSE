@@ -1,11 +1,12 @@
 /**
- * Top Navigation Bar, 4 Summary Cards, Global Search, Screenshot/Tour/Shortcuts Triggers,
- * and Simulation/Replay Toolbar.
+ * Simplified 3-Group Top Bar, Events Popover (with icons & 1-line descriptions),
+ * Scene Dropdown Popover, Animated Summary Card Counters, and Global Search.
  */
 import { store } from '../state/store.js';
 import { SECTORS } from '../data/sectors.js';
 import { INFRA_FACILITIES } from '../data/infrastructure.js';
 import { FINANCIAL_LESSONS } from '../data/lessons.js';
+import { ECONOMIC_EVENTS } from '../data/events.js';
 import { fmtPrice, fmtPct, fmtMcapCr, formatSimClock } from '../utils/format.js';
 import { recalculateAllFinancials } from '../engine/finance.js';
 import { stepMarketSimulation, applyEconomicEvent, endActiveEvent, resetFullSimulation } from '../engine/simulation.js';
@@ -19,6 +20,84 @@ import { startOnboardingTour, exportWatermarkedScreenshot } from './onboarding.j
 import { switchLeftNavView } from './leftNav.js';
 import { showToast } from './toasts.js';
 
+const EVENT_ICONS = {
+  NONE: '⚖️',
+  RATE_HIKE: '📈',
+  RATE_CUT: '📉',
+  OIL_SPIKE: '🛢️',
+  TECH_SELLOFF: '💻',
+  STRONG_EARNINGS: '🏆',
+  INR_DEPREC: '💱',
+  RISK_OFF: '🛡️'
+};
+
+const prevCardNums = {
+  nifty: 22450,
+  sensex: 73890
+};
+
+function animateCounterText(elId, fromVal, toVal, formatter) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  if (Math.abs(toVal - fromVal) < 0.01 || store.getViewState().reducedMotion) {
+    el.textContent = formatter(toVal);
+    return;
+  }
+  const start = performance.now();
+  const dur = 260;
+  function tick(now) {
+    const p = Math.min(1, (now - start) / dur);
+    const cur = fromVal + (toVal - fromVal) * p;
+    el.textContent = formatter(cur);
+    if (p < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+export function renderEventsPopoverList(viewState = store.getViewState()) {
+  const listEl = document.getElementById('events-popover-list');
+  if (!listEl) return;
+
+  listEl.innerHTML = Object.values(ECONOMIC_EVENTS)
+    .map(ev => {
+      const isAct = viewState.activeEventId === ev.id;
+      const icon = EVENT_ICONS[ev.id] || '⚡';
+      return `
+        <div class="event-popover-item ${isAct ? 'active' : ''}" role="menuitem" tabindex="0" data-ev-item="${ev.id}">
+          <span style="font-size:16px;">${icon}</span>
+          <div style="flex:1;">
+            <div style="font-weight:700; font-size:var(--text-sm);">${ev.name}</div>
+            <div style="font-size:11px; color:var(--text-secondary);">${ev.description}</div>
+          </div>
+        </div>
+      `;
+    })
+    .join('');
+
+  listEl.querySelectorAll('[data-ev-item]').forEach(item => {
+    const trigger = () => {
+      const evId = item.dataset.evItem;
+      if (evId === 'NONE') {
+        endActiveEvent();
+        update3DCityFromState(store.getViewState());
+        showToast('Active event ended. Live simulation continues.');
+      } else {
+        applyEconomicEvent(evId);
+        update3DCityFromState(store.getViewState());
+        showToast(`⚡ Event triggered: ${ECONOMIC_EVENTS[evId].name}`);
+      }
+      document.getElementById('events-popover-menu').style.display = 'none';
+    };
+    item.addEventListener('click', trigger);
+    item.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        trigger();
+      }
+    });
+  });
+}
+
 export function updateTopBarAndSummaryCards(viewState = store.getViewState()) {
   const clockEl = document.getElementById('sim-clock-display');
   const sessionDot = document.getElementById('session-dot');
@@ -26,16 +105,12 @@ export function updateTopBarAndSummaryCards(viewState = store.getViewState()) {
 
   if (viewState.dataMode === 'REAL_DATA') {
     sessionDot.className = 'status-dot unavail';
-    sessionLabel.textContent = 'PROVIDER UNCONFIGURED';
+    sessionLabel.textContent = 'UNCONFIGURED';
     clockEl.textContent = 'NO LIVE FEED';
   } else {
     sessionDot.className = 'status-dot' + (viewState.simRunning ? '' : ' paused');
     sessionLabel.textContent =
-      viewState.replayIndex !== -1
-        ? 'SIMULATION REPLAY'
-        : viewState.simRunning
-        ? 'SIMULATED SESSION'
-        : 'SIMULATION PAUSED';
+      viewState.replayIndex !== -1 ? 'REPLAY' : viewState.simRunning ? 'SIMULATED' : 'PAUSED';
     clockEl.textContent = formatSimClock(viewState.simSecondsFromOpen);
   }
 
@@ -55,16 +130,12 @@ export function updateTopBarAndSummaryCards(viewState = store.getViewState()) {
     }
   }
 
-  const quickEvSel = document.getElementById('quick-event-select');
   const decayBadge = document.getElementById('event-decay-badge');
   const endEventBtn = document.getElementById('end-event-btn');
-  if (quickEvSel && document.activeElement !== quickEvSel) {
-    quickEvSel.value = viewState.activeEventId || 'NONE';
-  }
   if (viewState.activeEventId && viewState.activeEventId !== 'NONE') {
     if (decayBadge) {
       decayBadge.style.display = 'inline-flex';
-      decayBadge.textContent = `${viewState.eventRemainingTicks}t left`;
+      decayBadge.textContent = `${viewState.eventRemainingTicks}t`;
     }
     if (endEventBtn) endEventBtn.style.display = 'inline-block';
   } else {
@@ -77,40 +148,52 @@ export function updateTopBarAndSummaryCards(viewState = store.getViewState()) {
 
   const isRealUnconf = viewState.dataMode === 'REAL_DATA';
 
+  // 1. NIFTY with animated counter
   const n = viewState.indices.NIFTY;
-  document.getElementById('card-nifty-val').textContent = isRealUnconf
-    ? 'Unavailable'
-    : n.current.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+  if (isRealUnconf) {
+    document.getElementById('card-nifty-val').textContent = 'Unavailable';
+  } else {
+    animateCounterText('card-nifty-val', prevCardNums.nifty, n.current, v =>
+      v.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    );
+    prevCardNums.nifty = n.current;
+  }
   const nBadge = document.getElementById('card-nifty-chg');
   nBadge.textContent = isRealUnconf ? 'No Feed' : fmtPct(n.changePercent);
   nBadge.className = `badge num ${n.changePercent >= 0 ? 'pos' : 'neg'}`;
   document.getElementById('card-nifty-prev').textContent = isRealUnconf
     ? 'Configure Adapter'
     : `Base: ${n.baseLevel.toLocaleString('en-IN')} (${n.constituentCount} const.)`;
-  drawSparkline('spark-nifty', n.history, n.changePercent >= 0 ? '#22A06B' : '#D94F52');
+  drawSparkline('spark-nifty', n.history, n.changePercent >= 0 ? '#22A06B' : '#E05255');
 
+  // 2. SENSEX with animated counter
   const s = viewState.indices.SENSEX;
-  document.getElementById('card-sensex-val').textContent = isRealUnconf
-    ? 'Unavailable'
-    : s.current.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+  if (isRealUnconf) {
+    document.getElementById('card-sensex-val').textContent = 'Unavailable';
+  } else {
+    animateCounterText('card-sensex-val', prevCardNums.sensex, s.current, v =>
+      v.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    );
+    prevCardNums.sensex = s.current;
+  }
   const sBadge = document.getElementById('card-sensex-chg');
   sBadge.textContent = isRealUnconf ? 'No Feed' : fmtPct(s.changePercent);
   sBadge.className = `badge num ${s.changePercent >= 0 ? 'pos' : 'neg'}`;
   document.getElementById('card-sensex-prev').textContent = isRealUnconf
     ? 'Configure Adapter'
     : `Base: ${s.baseLevel.toLocaleString('en-IN')} (${s.constituentCount} const.)`;
-  drawSparkline('spark-sensex', s.history, s.changePercent >= 0 ? '#22A06B' : '#D94F52');
+  drawSparkline('spark-sensex', s.history, s.changePercent >= 0 ? '#22A06B' : '#E05255');
 
+  // 3. Total Market Cap
   const t = viewState.totals;
   document.getElementById('card-mcap-val').textContent = isRealUnconf ? 'Unavailable' : fmtMcapCr(t.mcapCr);
   const mBadge = document.getElementById('card-mcap-chg');
   mBadge.textContent = isRealUnconf ? 'No Feed' : fmtPct(t.mcapChangePct);
   mBadge.className = `badge num ${t.mcapChangePct >= 0 ? 'pos' : 'neg'}`;
-  document.getElementById('card-mcap-count').textContent = `${t.listedCount} Listed (${
-    viewState.dataMode === 'SIMULATION' ? 'Sim' : 'Adapter'
-  })`;
-  drawSparkline('spark-mcap', t.mcapHistory, t.mcapChangePct >= 0 ? '#22A06B' : '#D94F52');
+  document.getElementById('card-mcap-count').textContent = `${t.listedCount} Listed Companies`;
+  drawSparkline('spark-mcap', t.mcapHistory, t.mcapChangePct >= 0 ? '#22A06B' : '#E05255');
 
+  // 4. Volume & Mood
   document.getElementById('card-vol-val').textContent = isRealUnconf ? 'Unavailable' : `${t.volumeCr.toFixed(2)} Cr sh`;
   const moodBadge = document.getElementById('card-mood-badge');
   moodBadge.textContent = isRealUnconf ? 'UNAVAILABLE' : t.mood;
@@ -210,8 +293,47 @@ function setupGlobalSearch() {
   });
 }
 
+function setupPopovers() {
+  const evBtn = document.getElementById('events-popover-btn');
+  const evMenu = document.getElementById('events-popover-menu');
+  const scBtn = document.getElementById('scene-popover-btn');
+  const scMenu = document.getElementById('scene-popover-menu');
+
+  if (evBtn && evMenu) {
+    evBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      const open = evMenu.style.display === 'block';
+      if (scMenu) scMenu.style.display = 'none';
+      if (!open) renderEventsPopoverList(store.getViewState());
+      evMenu.style.display = open ? 'none' : 'block';
+      evBtn.setAttribute('aria-expanded', String(!open));
+    });
+  }
+
+  if (scBtn && scMenu) {
+    scBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      const open = scMenu.style.display === 'block';
+      if (evMenu) evMenu.style.display = 'none';
+      scMenu.style.display = open ? 'none' : 'block';
+      scBtn.setAttribute('aria-expanded', String(!open));
+    });
+  }
+
+  document.addEventListener('click', e => {
+    if (evMenu && !evMenu.contains(e.target) && e.target !== evBtn) {
+      evMenu.style.display = 'none';
+    }
+    if (scMenu && !scMenu.contains(e.target) && e.target !== scBtn) {
+      scMenu.style.display = 'none';
+    }
+  });
+}
+
 export function initTopBarEvents() {
   setupGlobalSearch();
+  setupPopovers();
+  renderEventsPopoverList(store.getViewState());
 
   document.getElementById('exchange-select').addEventListener('change', e => {
     store.getLiveState().exchangeFilter = e.target.value;
@@ -247,12 +369,27 @@ export function initTopBarEvents() {
   const kbBtn = document.getElementById('shortcuts-top-btn');
   if (kbBtn) kbBtn.addEventListener('click', openShortcutsModal);
 
+  const sceneThemeBtn = document.getElementById('scene-theme-toggle-btn');
+  if (sceneThemeBtn) {
+    sceneThemeBtn.addEventListener('click', () => {
+      document.body.classList.toggle('light-ui');
+      store.getLiveState().lightUiTheme = document.body.classList.contains('light-ui');
+      store.emit('settings');
+    });
+  }
+
   document.getElementById('toggle-left-btn').addEventListener('click', () => {
-    document.body.classList.toggle('left-collapsed');
+    if (document.body.classList.contains('left-icon-only')) {
+      document.body.classList.remove('left-icon-only');
+    } else {
+      document.body.classList.add('left-icon-only');
+    }
   });
+
   document.getElementById('toggle-right-btn').addEventListener('click', () => {
     document.body.classList.toggle('right-collapsed');
   });
+
   document.getElementById('fullscreen-city-btn').addEventListener('click', () => {
     const allHidden =
       document.body.classList.contains('left-collapsed') &&
@@ -319,19 +456,6 @@ export function initTopBarEvents() {
   document.getElementById('replay-live-btn').addEventListener('click', () => {
     returnToLiveReplay();
     update3DCityFromState(store.getViewState());
-  });
-
-  document.getElementById('quick-event-select').addEventListener('change', e => {
-    const evId = e.target.value;
-    if (evId === 'NONE') {
-      endActiveEvent();
-      update3DCityFromState(store.getViewState());
-      showToast('Active event ended. Live simulation continues.');
-    } else {
-      applyEconomicEvent(evId);
-      update3DCityFromState(store.getViewState());
-      showToast(`Triggered event: ${e.target.options[e.target.selectedIndex].text}`);
-    }
   });
 
   document.getElementById('end-event-btn').addEventListener('click', () => {
