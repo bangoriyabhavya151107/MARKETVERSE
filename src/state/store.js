@@ -16,11 +16,13 @@ class Store {
       // UI & Mode Configuration
       dataMode: 'SIMULATION',
       exchangeFilter: 'ALL',
-      beginnerMode: true,
+      beginnerMode: true, // true = Beginner Preset, false = Pro/Advanced Preset
+      soundEnabled: false, // Off by default
+      storyModeActive: false,
       activeNavView: 'overview',
       activeBottomTab: 'companies',
       activeHistoryHorizon: '1D',
-      companyInspectorTab: 'snapshot', // 'snapshot' | 'chart' | 'learn'
+      companyInspectorTab: 'snapshot',
       tableSort: { col: 'marketCap', asc: false },
       tableFilter: '',
       selectedObject: null,

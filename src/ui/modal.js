@@ -1,11 +1,13 @@
 /**
- * Educational Concept Modal, Alerts Modal, Keyboard Shortcuts Modal, and Settings Modal.
+ * Educational Concept Modal, Alerts Modal, Keyboard Shortcuts Modal,
+ * Automated QA Test Suite Modal, and Settings Modal.
  */
 import { FINANCIAL_LESSONS } from '../data/lessons.js';
 import { store } from '../state/store.js';
 import { checkEducationalAlerts } from '../engine/alerts.js';
 import { syncQualitySettings } from '../world/postfx.js';
 import { update3DCityFromState } from '../world/buildings.js';
+import { runAllEngineTests } from '../engine/__tests__/engine.test.js';
 
 export function openConceptModal(conceptKey) {
   const les = FINANCIAL_LESSONS[conceptKey];
@@ -38,6 +40,46 @@ export function openConceptModal(conceptKey) {
   document.getElementById('modal-backdrop').style.display = 'flex';
 }
 
+export function openQATestModal() {
+  const results = runAllEngineTests();
+  update3DCityFromState(store.getViewState());
+
+  document.getElementById('modal-title').textContent = `🧪 Automated QA & Acceptance Suite (${results.passed}/${results.total} Passed)`;
+  document.getElementById('modal-body').innerHTML = `
+    <div class="edu-block" style="border-left-color:${results.failed === 0 ? 'var(--pos)' : 'var(--neg)'};">
+      <strong>Verification Summary: ${results.passed} Passed, ${results.failed} Failed</strong>
+      <p style="font-size:var(--text-sm); margin-top:4px;">
+        Executed live against the active MarketVerse engine and DOM state. You can also run <code>npm test</code> in the terminal.
+      </p>
+    </div>
+    <div class="section-card" style="max-height:55vh; overflow-y:auto;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>Test ID & Requirement</th>
+            <th>Verified Detail</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${results.items
+            .map(
+              t => `
+            <tr>
+              <td><span class="badge ${t.pass ? 'pos' : 'neg'}">${t.pass ? 'PASS ✓' : 'FAIL ✕'}</span></td>
+              <td style="font-weight:600; white-space:normal;">${t.name}</td>
+              <td class="num" style="white-space:normal; font-size:11px; color:var(--text-secondary);">${t.detail}</td>
+            </tr>
+          `
+            )
+            .join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+  document.getElementById('modal-backdrop').style.display = 'flex';
+}
+
 export function openShortcutsModal() {
   document.getElementById('modal-title').textContent = 'Keyboard, Mouse & Touch Controls';
   document.getElementById('modal-body').innerHTML = `
@@ -45,7 +87,7 @@ export function openShortcutsModal() {
       <h4>Keyboard Shortcuts</h4>
       <table class="data-table" style="font-size:12px;">
         <tbody>
-          <tr><td><kbd class="badge">1</kbd> – <kbd class="badge">9</kbd>, <kbd class="badge">0</kbd></td><td>Switch Left Navigation Views 1 through 10</td></tr>
+          <tr><td><kbd class="badge">1</kbd> – <kbd class="badge">9</kbd>, <kbd class="badge">0</kbd></td><td>Switch Left Navigation Views 1 through 9</td></tr>
           <tr><td><kbd class="badge">Space</kbd></td><td>Pause / Resume Live Market Simulation</td></tr>
           <tr><td><kbd class="badge">F</kbd></td><td>Focus Camera on Selected Object (or Exchange)</td></tr>
           <tr><td><kbd class="badge">Esc</kbd></td><td>Close Modal or Deselect Active Building/District</td></tr>
@@ -141,7 +183,7 @@ export function openSettingsModal() {
 
   body.innerHTML = `
     <div class="section-card">
-      <h4>Visual, Post-Processing & Atmosphere Controls</h4>
+      <h4>Visual, Audio & Accessibility Controls</h4>
       <div style="display:flex; flex-direction:column; gap:10px; margin-top:8px;">
         <label style="display:flex; justify-content:space-between; align-items:center;">
           <span>3D Graphics Quality (Active: <strong>${viewState.resolvedQuality}</strong>)</span>
@@ -161,12 +203,8 @@ export function openSettingsModal() {
           <input type="checkbox" id="modal-dof-checkbox" ${viewState.dofEnabled ? 'checked' : ''} />
         </label>
         <label style="display:flex; justify-content:space-between; align-items:center;">
-          <span>Automatic Smooth Day/Night Solar Cycle</span>
-          <input type="checkbox" id="modal-autocycle-checkbox" ${viewState.autoDayNight ? 'checked' : ''} />
-        </label>
-        <label style="display:flex; justify-content:space-between; align-items:center;">
-          <span>Override Market-Driven Sky Tint (Keep Neutral Sky)</span>
-          <input type="checkbox" id="modal-atmo-override-checkbox" ${viewState.atmosphereOverride ? 'checked' : ''} />
+          <span>Web Audio Sound Effects (Off by default)</span>
+          <input type="checkbox" id="modal-sound-checkbox" ${viewState.soundEnabled ? 'checked' : ''} />
         </label>
         <label style="display:flex; justify-content:space-between; align-items:center;">
           <span>Sector-Performance Ground Heatmap</span>
@@ -180,6 +218,10 @@ export function openSettingsModal() {
           <span>Reduced Motion (Respects OS prefers-reduced-motion)</span>
           <input type="checkbox" id="reduced-motion-checkbox" ${viewState.reducedMotion ? 'checked' : ''} />
         </label>
+        <div style="border-top:1px solid var(--border-subtle); padding-top:8px; display:flex; justify-content:space-between; align-items:center;">
+          <span>Automated Engine & 18 Acceptance Tests</span>
+          <button class="primary" id="modal-run-qa-btn">🧪 Run QA Suite</button>
+        </div>
       </div>
     </div>
     <div class="edu-block">
@@ -205,20 +247,13 @@ export function openSettingsModal() {
     syncQualitySettings(store.getLiveState().graphicsQuality);
   });
 
-  body.querySelector('#modal-autocycle-checkbox').addEventListener('change', e => {
+  body.querySelector('#modal-sound-checkbox').addEventListener('change', e => {
     const live = store.getLiveState();
-    live.autoDayNight = e.target.checked;
-    const autoBtn = document.getElementById('auto-cycle-btn');
-    if (autoBtn) autoBtn.classList.toggle('active', live.autoDayNight);
-  });
-
-  body.querySelector('#modal-atmo-override-checkbox').addEventListener('change', e => {
-    const live = store.getLiveState();
-    live.atmosphereOverride = e.target.checked;
-    const atmoBtn = document.getElementById('atmo-override-btn');
-    if (atmoBtn) {
-      atmoBtn.classList.toggle('active', !live.atmosphereOverride);
-      atmoBtn.textContent = live.atmosphereOverride ? '🌤️ Override' : '🌤️ Mood Sky';
+    live.soundEnabled = e.target.checked;
+    const sBtn = document.getElementById('sound-top-btn');
+    if (sBtn) {
+      sBtn.textContent = live.soundEnabled ? '🔊' : '🔇';
+      sBtn.classList.toggle('active', live.soundEnabled);
     }
   });
 
@@ -243,6 +278,8 @@ export function openSettingsModal() {
     store.getLiveState().reducedMotion = e.target.checked;
     store.emit('settings');
   });
+
+  body.querySelector('#modal-run-qa-btn').addEventListener('click', openQATestModal);
 
   document.getElementById('modal-backdrop').style.display = 'flex';
 }

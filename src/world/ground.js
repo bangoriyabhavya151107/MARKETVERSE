@@ -1,8 +1,9 @@
 /**
- * Ground Plaza, Paved Road Network with Reflective Wet-Road Material Support,
- * Sidewalks & Curbs, Scenic Canal Waterway, Bridges, and Light/Dark 3D Theme Palette.
+ * Ground Plaza, Merged Static Sidewalk/Embankment/Bridge Geometries (Low Draw Calls),
+ * Reflective Wet-Road Material Support, Scenic Canal Waterway, and Light/Dark 3D Theme Palette.
  */
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { scene } from './scene.js';
 import { createContactShadowMesh } from './lighting.js';
 
@@ -135,7 +136,7 @@ function createCanalWaterTexture() {
 export function buildGroundAndRoadNetwork() {
   if (!scene) return;
 
-  // 1. Main City Peninsula Stone Foundation (MeshPhongMaterial for wet-rain reflection support)
+  // 1. Main City Peninsula Stone Foundation
   const plazaTex = createPlazaTileTexture();
   const groundGeo = new THREE.BoxGeometry(276, 4, 256);
   groundMat = new THREE.MeshPhongMaterial({
@@ -149,15 +150,14 @@ export function buildGroundAndRoadNetwork() {
   ground.receiveShadow = true;
   scene.add(ground);
 
-  // 2. Scenic Canal Waterway along the Western Edge (x = -117)
+  // 2. Merged Canal Embankments (Single Draw Call)
   embankmentMat = new THREE.MeshLambertMaterial({ color: 0x243444 });
-  const westBank = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.4, 256), embankmentMat);
-  westBank.position.set(-108.5, 0.4, 8);
-  scene.add(westBank);
-
-  const outerBank = new THREE.Mesh(new THREE.BoxGeometry(3.0, 1.4, 256), embankmentMat);
-  outerBank.position.set(-125.5, 0.4, 8);
-  scene.add(outerBank);
+  const westBankGeo = new THREE.BoxGeometry(2.4, 1.4, 256);
+  westBankGeo.translate(-108.5, 0.4, 8);
+  const outerBankGeo = new THREE.BoxGeometry(3.0, 1.4, 256);
+  outerBankGeo.translate(-125.5, 0.4, 8);
+  const mergedBanks = new THREE.Mesh(mergeGeometries([westBankGeo, outerBankGeo]), embankmentMat);
+  scene.add(mergedBanks);
 
   canalWaterTexture = createCanalWaterTexture();
   const waterGeo = new THREE.PlaneGeometry(15, 254);
@@ -173,7 +173,7 @@ export function buildGroundAndRoadNetwork() {
   canalWaterMesh.position.set(-117, 0.12, 8);
   scene.add(canalWaterMesh);
 
-  // 3. Paved Road Avenues with Sidewalks & Curbs
+  // 3. Merged Sidewalks + Paved Road Avenues
   sidewalkMat = new THREE.MeshLambertMaterial({ color: 0x263545 });
   const avenues = [
     { x: -42, z: 8, w: 7.4, d: 226, horiz: false },
@@ -183,13 +183,13 @@ export function buildGroundAndRoadNetwork() {
     { x: 0, z: 64, w: 236, d: 7.4, horiz: true }
   ];
 
+  const swGeos = [];
   avenues.forEach(r => {
     const swW = r.horiz ? r.w : r.w + 2.6;
     const swD = r.horiz ? r.d + 2.6 : r.d;
-    const swMesh = new THREE.Mesh(new THREE.BoxGeometry(swW, 0.22, swD), sidewalkMat);
-    swMesh.position.set(r.x, 0.11, r.z);
-    swMesh.receiveShadow = true;
-    scene.add(swMesh);
+    const g = new THREE.BoxGeometry(swW, 0.22, swD);
+    g.translate(r.x, 0.11, r.z);
+    swGeos.push(g);
 
     const roadTex = createRoadAsphaltTexture(r.horiz, r.horiz ? r.w : r.d);
     const roadMat = new THREE.MeshPhongMaterial({
@@ -206,7 +206,11 @@ export function buildGroundAndRoadNetwork() {
     scene.add(roadMesh);
   });
 
-  // 4. Intersection Crosswalks
+  const mergedSidewalks = new THREE.Mesh(mergeGeometries(swGeos), sidewalkMat);
+  mergedSidewalks.receiveShadow = true;
+  scene.add(mergedSidewalks);
+
+  // 4. Merged Intersection Crosswalks (Single Draw Call)
   const crosswalkTex = createCrosswalkTexture();
   const crosswalkMat = new THREE.MeshPhongMaterial({
     map: crosswalkTex,
@@ -224,48 +228,45 @@ export function buildGroundAndRoadNetwork() {
     { x: 42, z: 64 }
   ];
 
-  intersections.forEach(pt => {
-    const cw = new THREE.Mesh(new THREE.BoxGeometry(9.6, 0.28, 9.6), crosswalkMat);
-    cw.position.set(pt.x, 0.14, pt.z);
-    cw.receiveShadow = true;
-    scene.add(cw);
+  const cwGeos = intersections.map(pt => {
+    const g = new THREE.BoxGeometry(9.6, 0.28, 9.6);
+    g.translate(pt.x, 0.14, pt.z);
+    return g;
   });
+  const mergedCrosswalks = new THREE.Mesh(mergeGeometries(cwGeos), crosswalkMat);
+  mergedCrosswalks.receiveShadow = true;
+  scene.add(mergedCrosswalks);
 
-  // 5. Three Arch Bridges with Soft Contact Shadows
+  // 5. Three Arch Bridges with Merged Decks & Arches
   const bridgeDeckMat = new THREE.MeshLambertMaterial({ color: 0x34495e });
   const bridgeArchMat = new THREE.MeshPhongMaterial({ color: 0x4b8be8, shininess: 50 });
+  const deckGeos = [];
+  const archGeos = [];
 
   [-55, 5, 64].forEach(zPos => {
-    const bGroup = new THREE.Group();
-    bGroup.position.set(-117, 0, zPos);
-
-    const deck = new THREE.Mesh(new THREE.BoxGeometry(19, 0.8, 9.5), bridgeDeckMat);
-    deck.position.y = 1.2;
-    deck.castShadow = true;
-    bGroup.add(deck);
+    const dg = new THREE.BoxGeometry(19, 0.8, 9.5);
+    dg.translate(-117, 1.2, zPos);
+    deckGeos.push(dg);
 
     const bridgeAo = createContactShadowMesh(20, 11, 0.55);
-    bridgeAo.position.y = 0.16;
-    bGroup.add(bridgeAo);
+    bridgeAo.position.set(-117, 0.16, zPos);
+    scene.add(bridgeAo);
 
     [-4.3, 4.3].forEach(zOff => {
-      const arch = new THREE.Mesh(
-        new THREE.TorusGeometry(7.5, 0.38, 8, 18, Math.PI),
-        bridgeArchMat
-      );
-      arch.position.set(0, 1.4, zOff);
-      bGroup.add(arch);
+      const ag = new THREE.TorusGeometry(7.5, 0.38, 8, 18, Math.PI);
+      ag.translate(-117, 1.4, zPos + zOff);
+      archGeos.push(ag);
     });
-
-    scene.add(bGroup);
   });
+
+  const mergedBridgeDecks = new THREE.Mesh(mergeGeometries(deckGeos), bridgeDeckMat);
+  mergedBridgeDecks.castShadow = true;
+  scene.add(mergedBridgeDecks);
+
+  const mergedBridgeArches = new THREE.Mesh(mergeGeometries(archGeos), bridgeArchMat);
+  scene.add(mergedBridgeArches);
 }
 
-/**
- * Updates ground & road materials for:
- * - Wet reflective roads during Rain
- * - Light vs. Dark UI 3D Scene Palette
- */
 export function updateGroundMaterials(isRain, nightFactor, lightUiTheme) {
   if (!groundMat || !sidewalkMat || !embankmentMat) return;
 

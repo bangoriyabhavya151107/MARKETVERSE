@@ -30,6 +30,21 @@
     <button id="skip-flyin-btn" class="primary">Skip Intro ⏭</button>
   </div>
 
+  <!-- 60-SECOND STORY MODE GUIDED SESSION OVERLAY -->
+  <div id="story-banner" style="display:none;" role="region" aria-label="60-Second Guided Market Session Story">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:4px;">
+      <span id="story-chapter-title" style="font-weight:700; color:var(--accent);">🎬 Story Mode</span>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span id="story-timer-badge" class="badge sim num">60s</span>
+        <button id="stop-story-btn" style="padding:2px 8px; font-size:var(--text-sm);">⏹ Exit Story</button>
+      </div>
+    </div>
+    <p id="story-chapter-desc" style="font-size:var(--text-sm); color:var(--text-primary); margin-bottom:6px;"></p>
+    <div class="loading-bar-track">
+      <div id="story-progress-fill" class="loading-bar-fill"></div>
+    </div>
+  </div>
+
   <!-- 3D CITY VIEWPORT -->
   <div id="viewport-container">
     <canvas id="city-canvas" aria-label="MarketVerse Interactive 3D Financial City"></canvas>
@@ -93,7 +108,7 @@
       </div>
     </div>
 
-    <!-- GROUP 2: Simulation (Clock, Play, Speed, Replay, Events Popover) -->
+    <!-- GROUP 2: Simulation (Clock, Play, Speed, Replay, Events Popover, Story Mode) -->
     <div class="topbar-group sim-top-group">
       <div class="status-pill" id="session-status-pill" title="Simulated Market Session Clock">
         <span class="status-dot" id="session-dot"></span>
@@ -135,9 +150,11 @@
           <div id="events-popover-list" class="popover-list"></div>
         </div>
       </div>
+
+      <button id="story-top-btn" class="hide-tablet" title="Launch 60-Second Guided Story Tour of a Market Session">🎬 Story</button>
     </div>
 
-    <!-- GROUP 3: View (Scene Dropdown, Beginner/Advanced, Alerts, Inspector) -->
+    <!-- GROUP 3: View (Scene Dropdown, Beginner/Pro Preset, Sound, QA, Alerts, Inspector) -->
     <div class="topbar-group">
       <!-- Scene Dropdown Popover -->
       <div class="popover-wrapper">
@@ -176,10 +193,12 @@
         </div>
       </div>
 
-      <button id="edu-mode-btn" title="Switch Beginner vs. Advanced Valuation Metrics"><span id="edu-mode-label">Beginner</span></button>
+      <button id="edu-mode-btn" title="Switch Beginner vs. Pro Workspace Preset"><span id="edu-mode-label">Beginner</span></button>
+      <button id="sound-top-btn" title="Toggle Web Audio Sound Effects (Off by default)" aria-label="Toggle Sound">🔇</button>
       <button id="alerts-top-btn" title="Educational Market Alerts">🔔 <span id="alert-count-badge" class="badge sim">0</span></button>
       <button id="tour-top-btn" class="hide-tablet" title="Start 4-Step City Guide Tour">🎓</button>
       <button id="screenshot-top-btn" class="hide-tablet" title="Export Watermarked City Screenshot">📷</button>
+      <button id="qa-top-btn" class="hide-tablet" title="Run Automated Engine & 18 Acceptance Tests">🧪</button>
       <button id="shortcuts-top-btn" class="hide-tablet" title="Keyboard Shortcuts Help (?)">⌨</button>
       <button id="settings-top-btn" title="Accessibility & Render Settings">⚙</button>
       <button id="toggle-right-btn" title="Toggle Inspector Panel">▤</button>
@@ -243,10 +262,9 @@
     </div>
   </nav>
 
-  <!-- TOP OVERLAY: 4 PRIMARY SUMMARY CARDS + REPLAY SCRUBBER BAR -->
+  <!-- TOP OVERLAY: 4 PRIMARY SUMMARY CARDS + REPLAY SCRUBBER & TELEMETRY BAR -->
   <section id="top-overlay" aria-label="Market Summary Cards">
     <div class="summary-cards-row">
-      <!-- Card 1: Simulated NIFTY 50 -->
       <div class="summary-card" data-summary-card="NIFTY" title="Cap-weighted benchmark index of large liquid NSE constituents in the MarketVerse city.">
         <div class="card-header">
           <span>NIFTY 50 <span class="badge sim">SIMULATED</span></span>
@@ -262,7 +280,6 @@
         </div>
       </div>
 
-      <!-- Card 2: Simulated SENSEX -->
       <div class="summary-card" data-summary-card="SENSEX" title="Cap-weighted benchmark index of major BSE constituents in the MarketVerse city.">
         <div class="card-header">
           <span>SENSEX <span class="badge sim">SIMULATED</span></span>
@@ -278,7 +295,6 @@
         </div>
       </div>
 
-      <!-- Card 3: Total Dataset Market Cap -->
       <div class="summary-card" data-summary-card="MCAP" title="Sum of (Share Price × Outstanding Shares) across all listed companies in MarketVerse.">
         <div class="card-header">
           <span>City M-Cap <span class="badge sim">SIMULATED</span></span>
@@ -294,7 +310,6 @@
         </div>
       </div>
 
-      <!-- Card 4: Total Dataset Volume & Mood -->
       <div class="summary-card" data-summary-card="VOL" title="Total shares traded in the session and overall advancing vs. declining breadth.">
         <div class="card-header">
           <span>Volume & Mood <span class="badge sim">SIMULATED</span></span>
@@ -311,17 +326,27 @@
       </div>
     </div>
 
-    <!-- Compact Replay Scrubber Bar -->
+    <!-- Compact Replay Scrubber + Heatmap Legend + Render Telemetry Bar -->
     <div class="sim-toolbar">
       <div class="sim-controls-group" style="width:100%; justify-content:space-between;">
         <div style="display:flex; align-items:center; gap:8px; flex:1;">
           <span style="font-size:var(--text-sm); color:var(--text-secondary); font-weight:600;">⏪ Replay Timeline:</span>
-          <input type="range" id="replay-slider" min="0" max="0" value="0" style="flex:1; max-width:260px;" aria-label="Replay Timeline Scrubber" title="Scrub recorded simulation history without mutating live state" />
+          <input type="range" id="replay-slider" min="0" max="0" value="0" style="flex:1; max-width:220px;" aria-label="Replay Timeline Scrubber" title="Scrub recorded simulation history without mutating live state" />
           <span class="badge sim num" id="replay-step-label">Live</span>
           <button id="replay-live-btn" style="display:none; padding:2px 8px; font-size:var(--text-sm);" class="primary" title="Return to Unmutated Live State">● Return to Live</button>
         </div>
-        <div style="font-size:var(--text-sm); color:var(--text-muted);" class="hide-tablet">
-          Tip: Double-click any tower to focus • Press <kbd class="badge">?</kbd> for shortcuts
+
+        <!-- Sector Heatmap Legend (shown when heatmap is active) -->
+        <div id="heatmap-legend-pill" style="display:none; align-items:center; gap:6px; font-size:var(--text-sm);">
+          <span>🔥 Heatmap:</span>
+          <span class="badge neg">≤ -2%</span>
+          <span class="badge neu">0%</span>
+          <span class="badge pos">≥ +2%</span>
+        </div>
+
+        <!-- Live Performance Telemetry (FPS, Draw Calls, Triangles) -->
+        <div id="perf-telemetry-pill" class="num hide-tablet" style="font-size:11px; color:var(--text-muted);" title="Live WebGL Render Telemetry (FPS • Draw Calls • Triangles)">
+          60 FPS • 0 draws • 0 tris
         </div>
       </div>
     </div>
@@ -393,7 +418,7 @@
     <button class="mob-nav-btn" data-mob-view="learn"><span>🎓</span><span>Learn</span></button>
   </nav>
 
-  <!-- MODAL FOR "UNDERSTAND THIS" LESSONS, SHORTCUTS & SETTINGS -->
+  <!-- MODAL FOR "UNDERSTAND THIS" LESSONS, SHORTCUTS, QA & SETTINGS -->
   <div id="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="modal-card">
       <div class="panel-header">

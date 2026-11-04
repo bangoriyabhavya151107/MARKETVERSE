@@ -1,5 +1,6 @@
 /**
- * Core Three.js Scene, Camera, WebGLRenderer initialization, and Quality Tier Auto-Detection.
+ * Core Three.js Scene, Camera, WebGLRenderer initialization, Quality Tier Auto-Detection,
+ * Adaptive Pixel-Ratio Scaling, Live Render Telemetry, and Resource Disposal on Teardown.
  */
 import * as THREE from 'three';
 import { store } from '../state/store.js';
@@ -9,6 +10,10 @@ export let camera = null;
 export let renderer = null;
 export let webglAvailable = false;
 export const interactiveMeshes = [];
+
+let smoothedFps = 60;
+let lowFpsStreak = 0;
+let highFpsStreak = 0;
 
 export function detectHardwareQuality() {
   const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768;
@@ -44,6 +49,74 @@ export function applyQualityToRenderer(qualityChoice = store.getLiveState().grap
 
   renderer.setSize(window.innerWidth, window.innerHeight);
   return resolved;
+}
+
+/**
+ * Dynamically adapts pixel ratio in AUTO mode if frame rate dips below 34 FPS.
+ */
+export function updateAdaptivePixelRatio(dt) {
+  if (!renderer || !webglAvailable || dt <= 0) return;
+  const currentFps = 1 / dt;
+  smoothedFps = smoothedFps * 0.92 + currentFps * 0.08;
+
+  const live = store.getLiveState();
+  if (live.graphicsQuality !== 'AUTO') return;
+
+  if (smoothedFps < 34) {
+    lowFpsStreak++;
+    highFpsStreak = 0;
+    if (lowFpsStreak > 45 && renderer.getPixelRatio() > 1.0) {
+      renderer.setPixelRatio(1.0);
+      lowFpsStreak = 0;
+    }
+  } else if (smoothedFps > 55) {
+    highFpsStreak++;
+    lowFpsStreak = 0;
+    const targetDpr = Math.min(window.devicePixelRatio || 1, live.resolvedQuality === 'HIGH' ? 2.0 : 1.5);
+    if (highFpsStreak > 120 && renderer.getPixelRatio() < targetDpr) {
+      renderer.setPixelRatio(targetDpr);
+      highFpsStreak = 0;
+    }
+  }
+}
+
+/**
+ * Returns live FPS, draw call count, and triangle count from WebGLRenderer.
+ */
+export function getRenderTelemetry() {
+  if (!renderer || !webglAvailable) {
+    return { fps: 0, calls: 0, triangles: 0, geometries: 0, textures: 0 };
+  }
+  return {
+    fps: Math.round(smoothedFps),
+    calls: renderer.info.render.calls,
+    triangles: renderer.info.render.triangles,
+    geometries: renderer.info.memory.geometries,
+    textures: renderer.info.memory.textures
+  };
+}
+
+/**
+ * Traverses the scene and disposes all geometries, materials, and textures on teardown.
+ */
+export function disposeSceneResources() {
+  if (!scene) return;
+  scene.traverse(obj => {
+    if (obj.geometry) {
+      obj.geometry.dispose();
+    }
+    if (obj.material) {
+      const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+      mats.forEach(m => {
+        if (m.map) m.map.dispose();
+        if (m.emissiveMap) m.emissiveMap.dispose();
+        m.dispose();
+      });
+    }
+  });
+  if (renderer) {
+    renderer.dispose();
+  }
 }
 
 export function initScene() {
@@ -91,6 +164,8 @@ export function initScene() {
       renderer.setSize(window.innerWidth, window.innerHeight);
     }
   });
+
+  window.addEventListener('beforeunload', disposeSceneResources);
 
   return { scene, camera, renderer, webglAvailable };
 }

@@ -3,7 +3,7 @@
  */
 import { store } from './state/store.js';
 import { initDataset, stepMarketSimulation } from './engine/simulation.js';
-import { initScene } from './world/scene.js';
+import { initScene, updateAdaptivePixelRatio, getRenderTelemetry } from './world/scene.js';
 import { buildLighting } from './world/lighting.js';
 import { buildGroundAndRoadNetwork, updateCanalWater } from './world/ground.js';
 import { buildCentralExchangeComplex, animateExchangeComplex } from './world/exchange.js';
@@ -23,8 +23,8 @@ import { initTopBarEvents, updateTopBarAndSummaryCards } from './ui/topbar.js';
 import { initLeftNavEvents } from './ui/leftNav.js';
 import { mountInspectorPanel, updateInspectorPanelOnTick } from './ui/inspector/index.js';
 import { initBottomPanelEvents, mountBottomPanel, updateBottomPanelOnTick } from './ui/bottomPanel.js';
-import { initModalEvents } from './ui/modal.js';
-import { initDynamicCountLabels, setLoadingProgress, finishLoadingAndStartIntro } from './ui/onboarding.js';
+import { initModalEvents, openQATestModal } from './ui/modal.js';
+import { initDynamicCountLabels, setLoadingProgress, finishLoadingAndStartIntro, playUiSound } from './ui/onboarding.js';
 
 function boot() {
   setLoadingProgress(15, 'Loading Seeded Indian Market Dataset...');
@@ -67,6 +67,10 @@ function boot() {
   initBottomPanelEvents();
   initModalEvents();
 
+  store.subscribe('selection', () => {
+    playUiSound('select');
+  });
+
   store.subscribe(
     ['selection', 'nav', 'settings', 'watchlist', 'portfolio', 'compare', 'whatif'],
     viewState => {
@@ -99,8 +103,15 @@ function boot() {
 
   finishLoadingAndStartIntro();
 
+  // Auto-open QA Acceptance Suite if ?test=1 is in the URL
+  if (window.location.search.includes('test=1')) {
+    setTimeout(() => openQATestModal(), 500);
+  }
+
+  const perfPill = document.getElementById('perf-telemetry-pill');
   let lastFrameTime = performance.now();
   let simAccumulator = 0;
+  let telemetryAccumulator = 0;
 
   function animate(now) {
     requestAnimationFrame(animate);
@@ -109,6 +120,7 @@ function boot() {
     const nowSec = now * 0.001;
     lastFrameTime = now;
 
+    // Pause simulation and 3D rendering when browser tab is hidden
     if (document.hidden) return;
 
     const liveState = store.getLiveState();
@@ -122,6 +134,7 @@ function boot() {
       }
     }
 
+    updateAdaptivePixelRatio(dt);
     updateCameraRig(dt);
     updateBuildingPulses(viewState.companies, dt, viewState);
     animateExchangeComplex(dt, liveState.reducedMotion);
@@ -135,8 +148,16 @@ function boot() {
     renderFrame(camRig.target);
     updateWorldLabelsProjection();
     updateMinimap();
+
+    telemetryAccumulator += dt;
+    if (telemetryAccumulator >= 0.5 && perfPill) {
+      telemetryAccumulator = 0;
+      const stats = getRenderTelemetry();
+      perfPill.textContent = `${stats.fps} FPS • ${stats.calls} draws • ${(stats.triangles / 1000).toFixed(1)}k tris`;
+    }
   }
 
   requestAnimationFrame(animate);
 }
+
 window.addEventListener('DOMContentLoaded', boot);

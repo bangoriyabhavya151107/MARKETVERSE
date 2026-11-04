@@ -1,6 +1,6 @@
 /**
- * Simplified 3-Group Top Bar, Events Popover (with icons & 1-line descriptions),
- * Scene Dropdown Popover, Animated Summary Card Counters, and Global Search.
+ * Simplified 3-Group Top Bar, Beginner/Pro Presets, Story Mode (60s), Sound Toggle,
+ * Events & Scene Popovers, Animated Summary Card Counters, and Global Search.
  */
 import { store } from '../state/store.js';
 import { SECTORS } from '../data/sectors.js';
@@ -15,8 +15,8 @@ import { selectWorldObject, clearSelection } from '../controls/picking.js';
 import { applyCameraPreset } from '../controls/cameraRig.js';
 import { update3DCityFromState } from '../world/buildings.js';
 import { drawSparkline } from './charts.js';
-import { openConceptModal, openAlertsModal, openSettingsModal, openShortcutsModal } from './modal.js';
-import { startOnboardingTour, exportWatermarkedScreenshot } from './onboarding.js';
+import { openConceptModal, openAlertsModal, openSettingsModal, openShortcutsModal, openQATestModal } from './modal.js';
+import { startOnboardingTour, startStoryMode, exportWatermarkedScreenshot, playUiSound } from './onboarding.js';
 import { switchLeftNavView } from './leftNav.js';
 import { showToast } from './toasts.js';
 
@@ -54,6 +54,35 @@ function animateCounterText(elId, fromVal, toVal, formatter) {
   requestAnimationFrame(tick);
 }
 
+export function applyWorkspacePreset(isBeginner) {
+  const live = store.getLiveState();
+  live.beginnerMode = isBeginner;
+  const lbl = document.getElementById('edu-mode-label');
+  if (lbl) lbl.textContent = isBeginner ? 'Beginner' : 'Pro';
+
+  if (!isBeginner) {
+    // Pro Preset: enable sector heatmap and expand bottom data table
+    live.heatmapMode = true;
+    document.body.classList.remove('bottom-collapsed');
+  } else {
+    live.heatmapMode = false;
+  }
+
+  const heatBtn = document.getElementById('heatmap-toggle-btn');
+  if (heatBtn) {
+    heatBtn.classList.toggle('active', live.heatmapMode);
+    heatBtn.textContent = live.heatmapMode ? '🔥 Sector Heatmap: On' : '🔥 Sector Heatmap: Off';
+  }
+
+  update3DCityFromState(store.getViewState());
+  store.emit('settings');
+  showToast(
+    isBeginner
+      ? 'Beginner Preset active: simplified core metrics & guided callouts.'
+      : 'Pro Preset active: P/E & Yield valuation columns + Sector Heatmap enabled.'
+  );
+}
+
 export function renderEventsPopoverList(viewState = store.getViewState()) {
   const listEl = document.getElementById('events-popover-list');
   if (!listEl) return;
@@ -83,6 +112,7 @@ export function renderEventsPopoverList(viewState = store.getViewState()) {
         showToast('Active event ended. Live simulation continues.');
       } else {
         applyEconomicEvent(evId);
+        playUiSound('event');
         update3DCityFromState(store.getViewState());
         showToast(`⚡ Event triggered: ${ECONOMIC_EVENTS[evId].name}`);
       }
@@ -112,6 +142,11 @@ export function updateTopBarAndSummaryCards(viewState = store.getViewState()) {
     sessionLabel.textContent =
       viewState.replayIndex !== -1 ? 'REPLAY' : viewState.simRunning ? 'SIMULATED' : 'PAUSED';
     clockEl.textContent = formatSimClock(viewState.simSecondsFromOpen);
+  }
+
+  const heatLegend = document.getElementById('heatmap-legend-pill');
+  if (heatLegend) {
+    heatLegend.style.display = viewState.heatmapMode ? 'inline-flex' : 'none';
   }
 
   const slider = document.getElementById('replay-slider');
@@ -148,7 +183,6 @@ export function updateTopBarAndSummaryCards(viewState = store.getViewState()) {
 
   const isRealUnconf = viewState.dataMode === 'REAL_DATA';
 
-  // 1. NIFTY with animated counter
   const n = viewState.indices.NIFTY;
   if (isRealUnconf) {
     document.getElementById('card-nifty-val').textContent = 'Unavailable';
@@ -166,7 +200,6 @@ export function updateTopBarAndSummaryCards(viewState = store.getViewState()) {
     : `Base: ${n.baseLevel.toLocaleString('en-IN')} (${n.constituentCount} const.)`;
   drawSparkline('spark-nifty', n.history, n.changePercent >= 0 ? '#22A06B' : '#E05255');
 
-  // 2. SENSEX with animated counter
   const s = viewState.indices.SENSEX;
   if (isRealUnconf) {
     document.getElementById('card-sensex-val').textContent = 'Unavailable';
@@ -184,7 +217,6 @@ export function updateTopBarAndSummaryCards(viewState = store.getViewState()) {
     : `Base: ${s.baseLevel.toLocaleString('en-IN')} (${s.constituentCount} const.)`;
   drawSparkline('spark-sensex', s.history, s.changePercent >= 0 ? '#22A06B' : '#E05255');
 
-  // 3. Total Market Cap
   const t = viewState.totals;
   document.getElementById('card-mcap-val').textContent = isRealUnconf ? 'Unavailable' : fmtMcapCr(t.mcapCr);
   const mBadge = document.getElementById('card-mcap-chg');
@@ -193,7 +225,6 @@ export function updateTopBarAndSummaryCards(viewState = store.getViewState()) {
   document.getElementById('card-mcap-count').textContent = `${t.listedCount} Listed Companies`;
   drawSparkline('spark-mcap', t.mcapHistory, t.mcapChangePct >= 0 ? '#22A06B' : '#E05255');
 
-  // 4. Volume & Mood
   document.getElementById('card-vol-val').textContent = isRealUnconf ? 'Unavailable' : `${t.volumeCr.toFixed(2)} Cr sh`;
   const moodBadge = document.getElementById('card-mood-badge');
   moodBadge.textContent = isRealUnconf ? 'UNAVAILABLE' : t.mood;
@@ -351,11 +382,26 @@ export function initTopBarEvents() {
   });
 
   document.getElementById('edu-mode-btn').addEventListener('click', () => {
-    const live = store.getLiveState();
-    live.beginnerMode = !live.beginnerMode;
-    document.getElementById('edu-mode-label').textContent = live.beginnerMode ? 'Beginner' : 'Advanced';
-    store.emit('settings');
+    applyWorkspacePreset(!store.getLiveState().beginnerMode);
   });
+
+  const soundBtn = document.getElementById('sound-top-btn');
+  if (soundBtn) {
+    soundBtn.addEventListener('click', () => {
+      const live = store.getLiveState();
+      live.soundEnabled = !live.soundEnabled;
+      soundBtn.textContent = live.soundEnabled ? '🔊' : '🔇';
+      soundBtn.classList.toggle('active', live.soundEnabled);
+      if (live.soundEnabled) playUiSound('select');
+      showToast(live.soundEnabled ? '🔊 Web Audio sound effects enabled.' : '🔇 Sound effects muted.');
+    });
+  }
+
+  const storyBtn = document.getElementById('story-top-btn');
+  if (storyBtn) storyBtn.addEventListener('click', startStoryMode);
+
+  const qaBtn = document.getElementById('qa-top-btn');
+  if (qaBtn) qaBtn.addEventListener('click', openQATestModal);
 
   document.getElementById('alerts-top-btn').addEventListener('click', openAlertsModal);
   document.getElementById('settings-top-btn').addEventListener('click', openSettingsModal);
