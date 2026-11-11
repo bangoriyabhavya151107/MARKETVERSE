@@ -2,19 +2,25 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MarketVerse — The Living Stock Market City</title>
-  <meta name="description" content="MarketVerse — The Living 3D Stock Market City & Financial Literacy Platform. Explore 36 companies, real-time market cap skyscrapers, and economic scenarios." />
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏛️</text></svg>" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <title>MarketVerse — The Living 3D Stock Market City</title>
+  <meta name="description" content="MarketVerse — The Living 3D Stock Market City & Financial Literacy Platform. Explore 36 companies, market cap skyscrapers, 10 sector districts, and real-time economic simulations." />
+  <meta name="theme-color" content="#101820" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
   <!-- Open Graph / Social Sharing Metadata -->
-  <meta property="og:title" content="MarketVerse — The Living Stock Market City" />
+  <meta property="og:title" content="MarketVerse — The Living 3D Stock Market City" />
   <meta property="og:description" content="Explore a 3D stock market city where building height reflects company market capitalization. Live simulation, 10 sector districts, and financial education." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://3dmarket-bb-tc.vercel.app/" />
+  <meta property="og:image" content="https://3dmarket-bb-tc.vercel.app/og-image.svg" />
+
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="MarketVerse — The Living Stock Market City" />
+  <meta name="twitter:title" content="MarketVerse — The Living 3D Stock Market City" />
   <meta name="twitter:description" content="Explore a 3D stock market city where building height reflects company market capitalization." />
+  <meta name="twitter:image" content="https://3dmarket-bb-tc.vercel.app/og-image.svg" />
+
   <link rel="stylesheet" href="/src/styles/tokens.css" />
   <link rel="stylesheet" href="/src/styles/base.css" />
   <link rel="stylesheet" href="/src/styles/layout.css" />
@@ -22,32 +28,105 @@
 </head>
 <body>
 
-  <!-- LOADING SCREEN & CINEMATIC FLY-IN BANNER -->
+  <!-- LOADING SCREEN -->
   <div id="loading-screen" role="status" aria-live="polite">
     <div class="loading-card">
-      <div class="brand-logo" style="justify-content:center; font-size:20px; margin-bottom:10px;">
-        <span class="brand-cube" style="width:28px; height:28px; font-size:15px;">M</span>
+      <div class="brand-logo" style="justify-content:center; font-size:22px; margin-bottom:12px;">
+        <span class="brand-cube" style="width:30px; height:30px; font-size:16px;">M</span>
         <span>MARKETVERSE</span>
       </div>
-      <div id="loading-status-text" style="color:var(--text-secondary); font-size:var(--text-md); margin-bottom:10px;">Initializing 3D Financial City...</div>
+      <div id="loading-status-text" style="color:var(--text-secondary); font-size:var(--text-md); margin-bottom:12px;">Initializing 3D Financial City...</div>
       <div class="loading-bar-track">
         <div id="loading-bar-fill" class="loading-bar-fill"></div>
       </div>
     </div>
   </div>
 
-  <div id="flyin-banner" style="display:none;">
-    <span>🎬 Cinematic City Fly-In</span>
-    <button id="skip-flyin-btn" class="primary">Skip Intro ⏭</button>
+  <!-- INTRO MOTION GRAPHICS OVERLAY (GSAP 8s, skippable, remembers in localStorage) -->
+  <div id="intro-screen" style="display:none;" role="region" aria-label="MarketVerse Cinematic Introduction">
+    <button id="intro-skip-btn" class="primary" title="Skip Cinematic Introduction">Skip Intro ⏭</button>
+
+    <div class="intro-content">
+      <!-- Scene 1: Logo & Candlestick Draw-On -->
+      <div class="intro-scene-1">
+        <svg id="intro-logo-svg" viewBox="0 0 400 120" class="intro-svg-logo">
+          <!-- Monogram Box Outline -->
+          <rect id="intro-logo-path" x="40" y="20" width="70" height="70" rx="14" fill="none" stroke="#4B8BE8" stroke-width="5" />
+          <text x="75" y="68" fill="#F2F5F7" font-size="40" font-weight="900" text-anchor="middle" font-family="sans-serif">M</text>
+          <!-- Brand Wordmark -->
+          <text id="intro-logo-text" x="130" y="68" fill="#F2F5F7" font-size="34" font-weight="800" letter-spacing="3" font-family="sans-serif">MARKETVERSE</text>
+        </svg>
+
+        <svg id="intro-chart-svg" viewBox="0 0 600 80" class="intro-svg-chart">
+          <path id="intro-candle-path" d="M10,60 L70,45 L130,55 L200,30 L270,48 L340,22 L410,38 L480,15 L550,28 L590,10" fill="none" stroke="#22A06B" stroke-width="4" stroke-linecap="round" />
+        </svg>
+      </div>
+
+      <!-- Scene 2: City Skyline Silhouette & Scrolling Ticker -->
+      <div class="intro-scene-2">
+        <div class="intro-skyline-container">
+          <div class="intro-skyline-bar" style="height:60px;"></div>
+          <div class="intro-skyline-bar" style="height:110px;"></div>
+          <div class="intro-skyline-bar" style="height:85px;"></div>
+          <div class="intro-skyline-bar" style="height:150px;"></div>
+          <div class="intro-skyline-bar" style="height:95px;"></div>
+          <div class="intro-skyline-bar" style="height:175px;"></div>
+          <div class="intro-skyline-bar" style="height:130px;"></div>
+          <div class="intro-skyline-bar" style="height:75px;"></div>
+          <div class="intro-skyline-bar" style="height:120px;"></div>
+          <div class="intro-skyline-bar" style="height:190px;"></div>
+          <div class="intro-skyline-bar" style="height:105px;"></div>
+          <div class="intro-skyline-bar" style="height:140px;"></div>
+        </div>
+
+        <div id="intro-ticker-wrap" class="intro-ticker-wrap">
+          <div class="intro-ticker-inner">
+            <span>NIFTY 22,450.00 ▲ +0.82%</span>
+            <span>•</span>
+            <span>BHARATBK ₹1,678.00 ▲ +0.23%</span>
+            <span>•</span>
+            <span>INDUSPET ₹2,890.00 ▲ +0.58%</span>
+            <span>•</span>
+            <span>NAVYATECH ₹3,856.00 ▲ +1.12%</span>
+            <span>•</span>
+            <span>HDFCBANK ₹1,540.00 ▼ -0.34%</span>
+            <span>•</span>
+            <span>RELIANCE ₹2,980.00 ▲ +0.75%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scene 3: Tagline Reveal -->
+      <div class="intro-scene-3">
+        <h1 id="intro-tagline" class="intro-tagline">Every building is a company.<br>Every district is a sector.</h1>
+        <p id="intro-subtagline" class="intro-subtagline">The Living 3D Stock Market City & Financial Literacy Platform</p>
+      </div>
+    </div>
   </div>
 
-  <!-- 60-SECOND STORY MODE GUIDED SESSION OVERLAY -->
-  <div id="story-banner" style="display:none;" role="region" aria-label="60-Second Guided Market Session Story">
+  <!-- 5-STEP GUIDED ONBOARDING TOUR (WITH SPOTLIGHT OVERLAY) -->
+  <div id="tour-spotlight-overlay" style="display:none;" aria-hidden="true"></div>
+
+  <div id="onboarding-card" style="display:none;" role="dialog" aria-modal="true" aria-label="MarketVerse Guided Tour">
+    <div class="onboarding-header">
+      <span id="onboarding-step-badge" class="badge sim">Step 1 of 5</span>
+      <button id="onboarding-close-btn" title="Exit Guided Tour" style="padding:4px 8px; font-size:var(--text-sm); min-height:36px;">✕ Skip</button>
+    </div>
+    <h4 id="onboarding-title" style="margin:8px 0 6px; font-size:var(--text-lg);">1. A Building = A Company</h4>
+    <p id="onboarding-desc" style="font-size:var(--text-md); color:var(--text-secondary); margin-bottom:14px; line-height:1.45;"></p>
+    <div style="display:flex; justify-content:space-between; gap:8px;">
+      <button id="onboarding-prev-btn" style="min-height:44px; padding:0 14px;">← Prev</button>
+      <button id="onboarding-next-btn" class="primary" style="min-height:44px; padding:0 16px;">Next Step →</button>
+    </div>
+  </div>
+
+  <!-- 60-SECOND STORY MODE BANNER -->
+  <div id="story-banner" style="display:none;" role="region" aria-label="60-Second Guided Market Story">
     <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:4px;">
       <span id="story-chapter-title" style="font-weight:700; color:var(--accent);">🎬 Story Mode</span>
       <div style="display:flex; align-items:center; gap:8px;">
-        <span id="story-timer-badge" class="badge sim num">60s</span>
-        <button id="stop-story-btn" style="padding:2px 8px; font-size:var(--text-sm);">⏹ Exit Story</button>
+        <span id="story-timer-badge" class="badge sim num">60s left</span>
+        <button id="stop-story-btn" style="padding:4px 8px; font-size:var(--text-sm); min-height:36px;">⏹ Exit Story</button>
       </div>
     </div>
     <p id="story-chapter-desc" style="font-size:var(--text-sm); color:var(--text-primary); margin-bottom:6px;"></p>
@@ -56,13 +135,58 @@
     </div>
   </div>
 
-  <!-- 3D CITY VIEWPORT -->
+  <!-- GLOBAL SHEET & DRAWER BACKDROP -->
+  <div id="sheet-backdrop" class="sheet-backdrop" style="display:none;"></div>
+
+  <!-- TOAST NOTIFICATIONS CONTAINER -->
+  <div id="toast-container" aria-live="polite"></div>
+
+  <!-- SLIM TOP BAR (MAX 5 VISIBLE ITEMS) -->
+  <header id="topbar">
+    <!-- Item 1: Brand Logo -->
+    <div id="topbar-logo" class="brand-logo" role="button" tabindex="0" title="Return to 3D City View">
+      <span class="brand-cube">M</span>
+      <span class="brand-text">MARKETVERSE</span>
+    </div>
+
+    <!-- Center/Right Slim Controls (Max 4 items) -->
+    <div class="topbar-group">
+      <!-- Item 2: Search Button -->
+      <button id="topbar-search-btn" class="topbar-btn" title="Search companies, sectors, or financial concepts ('/')" aria-label="Search MarketVerse">
+        <span class="btn-icon">🔍</span>
+        <span class="btn-label hide-mobile">Search</span>
+      </button>
+
+      <!-- Item 3: Simulation Clock Chip -> Opens Simulation Sheet -->
+      <button id="topbar-sim-chip" class="status-pill-btn" title="Simulation Clock & Controls (Click to Open Simulation Sheet)" aria-label="Open Simulation Sheet">
+        <span class="status-dot" id="session-dot"></span>
+        <span class="num" id="sim-clock-display">10:15 IST</span>
+        <span class="badge sim hide-mobile" id="topbar-sim-badge">Sim</span>
+      </button>
+
+      <!-- Item 4: Scene Button -> Opens Scene Sheet -->
+      <button id="topbar-scene-btn" class="topbar-btn" title="3D Scene Atmosphere & Weather Settings" aria-label="Open 3D Scene Settings">
+        <span class="btn-icon">🌤️</span>
+        <span class="btn-label hide-mobile">Scene</span>
+      </button>
+
+      <!-- Item 5: Menu Button -> Opens Main Menu Drawer -->
+      <button id="topbar-menu-btn" class="topbar-btn" title="Main Navigation & Application Menu" aria-label="Open Main Menu">
+        <span class="btn-icon">☰</span>
+        <span class="btn-label hide-mobile">Menu</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- 3D CITY VIEWPORT CONTAINER (Full Screen on #/city) -->
   <div id="viewport-container">
     <canvas id="city-canvas" aria-label="MarketVerse Interactive 3D Financial City"></canvas>
+
+    <!-- WebGL Fallback Block: Strictly hidden unless WebGL context fails -->
     <div id="webgl-fallback" class="webgl-fallback" style="display: none;" role="alert">
       <div class="webgl-fallback-card">
         <h2>3D City View Unavailable on This Device</h2>
-        <p>Your browser or graphics hardware could not initialize WebGL. All MarketVerse financial tables, calculators, company inspectors, and interactive lessons remain fully functional below and in the side panels.</p>
+        <p>Your browser or graphics hardware could not initialize WebGL. All MarketVerse financial tables, calculators, company inspectors, and interactive lessons remain fully functional across the Markets, Companies, Learn, and Tools screens.</p>
       </div>
     </div>
   </div>
@@ -70,199 +194,59 @@
   <!-- FLOATING 3D LABELS OVERLAY -->
   <div id="world-labels"></div>
 
-  <!-- HOVER MINI TOOLTIP -->
-  <div id="hover-tooltip" style="display:none;" role="tooltip"></div>
+  <!-- FLOATING EXPANDABLE MARKET PULSE CHIP (IN 3D VIEW) -->
+  <div id="market-pulse-chip" class="market-pulse-chip pos" role="button" tabindex="0" title="Tap to expand full market breadth and index values" aria-label="Market Pulse Overview">
+    <span id="market-pulse-text">📈 NIFTY 22,450.00 (+0.82%) • BULLISH</span>
+    <span style="font-size:12px; margin-left:4px;">▾</span>
+  </div>
 
-  <!-- 4-STEP ONBOARDING TOUR CARD -->
-  <div id="onboarding-card" style="display:none;" role="dialog" aria-label="MarketVerse Onboarding Tour">
-    <div class="onboarding-header">
-      <span id="onboarding-step-badge" class="badge sim">Step 1 of 4</span>
-      <button id="onboarding-close-btn" title="Exit Tour" style="padding:2px 6px; font-size:var(--text-sm);">✕ Skip</button>
-    </div>
-    <h4 id="onboarding-title" style="margin:6px 0 4px; font-size:var(--text-lg);">Welcome to MarketVerse</h4>
-    <p id="onboarding-desc" style="font-size:var(--text-md); color:var(--text-secondary); margin-bottom:10px;"></p>
-    <div style="display:flex; justify-content:space-between; gap:6px;">
-      <button id="onboarding-prev-btn">← Prev</button>
-      <button id="onboarding-next-btn" class="primary">Next →</button>
+  <!-- FLOATING EXPANDED MARKET PULSE CARD -->
+  <div id="market-pulse-popover" class="market-pulse-popover" style="display:none;" role="region" aria-label="Expanded Market Summary"></div>
+
+  <!-- FLOATING VIEWPORT TOGGLES & CAMERA D-PAD -->
+  <div id="viewport-toggles">
+    <button id="fullscreen-city-btn" title="Focus 3D City View (Close Drawers)">⛶ Clear View</button>
+    <button id="reset-cam-btn" title="Reset Camera to Entire Market View">🎯 Reset View</button>
+    <div class="cam-dpad" role="group" aria-label="On-Screen Camera Controls">
+      <button id="cam-rot-left-btn" title="Orbit Left" aria-label="Orbit Camera Left">↺</button>
+      <button id="cam-rot-right-btn" title="Orbit Right" aria-label="Orbit Camera Right">↻</button>
+      <button id="cam-tilt-up-btn" title="Tilt Camera Up" aria-label="Tilt Camera Up">↑</button>
+      <button id="cam-tilt-down-btn" title="Tilt Camera Down" aria-label="Tilt Camera Down">↓</button>
+      <button id="cam-zoom-in-btn" title="Zoom In" aria-label="Zoom In">+</button>
+      <button id="cam-zoom-out-btn" title="Zoom Out" aria-label="Zoom Out">−</button>
     </div>
   </div>
 
-  <!-- TOAST NOTIFICATIONS CONTAINER -->
-  <div id="toast-container" aria-live="polite"></div>
-
-  <!-- TOP NAVIGATION BAR (3 GROUPS: 1. Market/Exchange, 2. Simulation, 3. View/Scene) -->
-  <header id="topbar">
-    <!-- GROUP 1: Market / Exchange & Search -->
-    <div class="topbar-group">
-      <button id="toggle-left-btn" title="Toggle Navigation Sidebar (Expanded / Icon-Only)" aria-label="Toggle Left Navigation">☰</button>
-      <div class="brand-logo">
-        <span class="brand-cube">M</span>
-        <span class="brand-text">MARKETVERSE</span>
-      </div>
-      <div class="top-selectors">
-        <select id="market-select" aria-label="Market Country Selector" title="Active Market Ecosystem">
-          <option value="IN" selected>🇮🇳 India (₹)</option>
-        </select>
-        <select id="exchange-select" aria-label="Exchange Filter" title="Filter Listed Companies by Exchange">
-          <option value="ALL">NSE + BSE</option>
-          <option value="NSE">NSE</option>
-          <option value="BSE">BSE</option>
-        </select>
-        <select id="data-mode-select" aria-label="Data Source Mode" title="Switch between Seeded Simulation and Real-Data Adapter">
-          <option value="SIMULATION" selected>Sim Mode</option>
-          <option value="REAL_DATA">Adapter Mode</option>
-        </select>
-      </div>
-      <div class="search-wrapper">
-        <input type="text" id="global-search" placeholder="Search company, sector, or concept ('/')..." aria-label="Search companies, sectors, or financial concepts" autocomplete="off" />
-        <div id="search-results" role="listbox"></div>
-      </div>
+  <!-- 2D CITY MINIMAP RADAR -->
+  <div id="minimap-container" title="Click or drag to move camera across districts">
+    <div class="minimap-header">
+      <span>CITY RADAR</span>
+      <button id="minimap-toggle-btn" aria-label="Minimize Minimap" style="padding:0 4px; font-size:11px; border:none; background:transparent;">−</button>
     </div>
+    <canvas id="city-minimap" width="150" height="145" aria-label="2D City Minimap"></canvas>
+  </div>
 
-    <!-- GROUP 2: Simulation (Clock, Play, Speed, Replay, Events Popover, Story Mode) -->
-    <div class="topbar-group sim-top-group">
-      <div class="status-pill" id="session-status-pill" title="Simulated Market Session Clock">
-        <span class="status-dot" id="session-dot"></span>
-        <span id="session-label" class="hide-tablet">SIMULATED</span>
-        <span class="num" id="sim-clock-display">10:15:00 IST</span>
-      </div>
-
-      <button id="sim-play-pause-btn" class="primary" title="Pause or Resume Live Simulation (Space)">⏸ Pause</button>
-      <div class="speed-pill-group" role="group" aria-label="Simulation Speed">
-        <button class="sim-speed-btn" data-speed="0.5" title="0.5x Speed">0.5×</button>
-        <button class="sim-speed-btn active" data-speed="1" title="1x Normal Speed">1×</button>
-        <button class="sim-speed-btn" data-speed="3" title="3x Fast Speed">3×</button>
-      </div>
-      <button id="sim-step-btn" title="Advance 1 Simulation Tick">Step +1</button>
-
-      <!-- Events Popover Trigger & Menu -->
-      <div class="popover-wrapper">
-        <button id="events-popover-btn" aria-haspopup="true" aria-expanded="false" title="Trigger or End Hypothetical Economic Events">
-          ⚡ Events <span id="event-decay-badge" class="badge sim" style="display:none;"></span>
-        </button>
-        <div id="events-popover-menu" class="popover-menu" role="menu" style="display:none; width:330px;">
-          <div class="popover-header">
-            <span>Hypothetical Market Shocks (7)</span>
-            <div style="display:flex; gap:4px;">
-              <button id="end-event-btn" style="display:none; padding:2px 6px; font-size:var(--text-sm);" title="End event drift without resetting simulation">⏹ End Event</button>
-              <button id="sim-reset-btn" style="padding:2px 6px; font-size:var(--text-sm);" title="Reset entire simulation to initial seed">↺ Reset Sim</button>
-            </div>
-          </div>
-          <select id="quick-event-select" style="display:none;" aria-hidden="true">
-            <option value="NONE">Baseline Market Session (No Active Shock)</option>
-            <option value="RATE_HIKE">Central Bank Interest-Rate Increase (+50 bps)</option>
-            <option value="RATE_CUT">Central Bank Interest-Rate Decrease (-50 bps)</option>
-            <option value="OIL_SPIKE">Crude Oil Price Surge (+18%)</option>
-            <option value="TECH_SELLOFF">Broad Technology-Sector Sell-Off</option>
-            <option value="STRONG_EARNINGS">Strong Corporate Earnings Season</option>
-            <option value="INR_DEPREC">Rupee Currency Depreciation vs USD</option>
-            <option value="RISK_OFF">Broad Market Risk-Off Rotation</option>
-          </select>
-          <div id="events-popover-list" class="popover-list"></div>
-        </div>
-      </div>
-
-      <button id="story-top-btn" class="hide-tablet" title="Launch 60-Second Guided Story Tour of a Market Session">🎬 Story</button>
-    </div>
-
-    <!-- GROUP 3: View (Scene Dropdown, Beginner/Pro Preset, Sound, QA, Alerts, Inspector) -->
-    <div class="topbar-group">
-      <!-- Scene Dropdown Popover -->
-      <div class="popover-wrapper">
-        <button id="scene-popover-btn" aria-haspopup="true" aria-expanded="false" title="3D Scene Weather, Time of Day, Labels, Quality & Theme">
-          🌤️ Scene ▾
-        </button>
-        <div id="scene-popover-menu" class="popover-menu" role="menu" style="display:none; width:260px; right:0;">
-          <div class="popover-header"><span>3D Scene & Atmosphere</span></div>
-          <div style="display:flex; flex-direction:column; gap:8px; padding:8px;">
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px;">
-              <button id="day-night-btn" title="Toggle Day / Night Lighting">☀️ Day</button>
-              <button id="auto-cycle-btn" title="Toggle Automatic Solar Cycle">🔄 Auto</button>
-            </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px;">
-              <button id="labels-toggle-btn" class="active" title="Toggle 3D Floating Ticker Labels">🏷️ Labels</button>
-              <button id="atmo-override-btn" class="active" title="Toggle Market-Mood Sky Tint">🌤️ Mood Sky</button>
-            </div>
-            <button id="heatmap-toggle-btn" style="width:100%;" title="Tint district plazas by cap-weighted sector return">🔥 Sector Heatmap: Off</button>
-            <label style="font-size:var(--text-sm); color:var(--text-secondary);">Weather & Time Preset</label>
-            <select id="weather-select" style="width:100%;" aria-label="City Weather Atmosphere">
-              <option value="CLEAR">Weather: Clear Day</option>
-              <option value="CLOUDY">Weather: Cloudy</option>
-              <option value="RAIN">Weather: Light Rain</option>
-              <option value="EVENING">Atmosphere: Evening</option>
-              <option value="NIGHT">Atmosphere: Night</option>
-            </select>
-            <label style="font-size:var(--text-sm); color:var(--text-secondary);">Graphics Quality</label>
-            <select id="quality-select" style="width:100%;" aria-label="Graphics Quality Setting">
-              <option value="AUTO" selected>Quality: Auto-Detect</option>
-              <option value="HIGH">Quality: High (Bloom + Shadows)</option>
-              <option value="MEDIUM">Quality: Medium</option>
-              <option value="LOW">Quality: Low (Battery Saver)</option>
-            </select>
-            <button id="scene-theme-toggle-btn" style="width:100%;">🎨 Toggle Dark / Daylight Theme</button>
-          </div>
-        </div>
-      </div>
-
-      <button id="edu-mode-btn" title="Switch Beginner vs. Pro Workspace Preset"><span id="edu-mode-label">Beginner</span></button>
-      <button id="sound-top-btn" title="Toggle Web Audio Sound Effects" aria-label="Toggle Sound">🔇 <span class="hide-tablet">Sound</span></button>
-      <button id="alerts-top-btn" title="Educational Market Alerts">🔔 <span class="hide-tablet">Alerts</span> <span id="alert-count-badge" class="badge sim">0</span></button>
-
-      <!-- Clean Tools & Utilities Popover Menu -->
-      <div class="popover-wrapper">
-        <button id="tools-popover-btn" aria-haspopup="true" aria-expanded="false" title="Developer, Educational & Media Tools">
-          🛠️ <span class="hide-tablet">Tools</span> ▾
-        </button>
-        <div id="tools-popover-menu" class="popover-menu" role="menu" style="display:none; width:220px; right:0;">
-          <div class="popover-header"><span>Tools & Help</span></div>
-          <div style="display:flex; flex-direction:column; gap:4px; padding:6px;">
-            <button id="tour-top-btn" style="text-align:left; width:100%;" title="Start 4-Step City Guide Tour">🎓 Onboarding Tour</button>
-            <button id="screenshot-top-btn" style="text-align:left; width:100%;" title="Export Watermarked City Screenshot">📷 Export Screenshot</button>
-            <button id="shortcuts-top-btn" style="text-align:left; width:100%;" title="Keyboard Shortcuts Help (?)">⌨ Keyboard Shortcuts</button>
-            <button id="qa-top-btn" style="text-align:left; width:100%;" title="Run Automated Engine & 18 Acceptance Tests">🧪 QA Test Suite</button>
-            <button id="credits-top-btn" style="text-align:left; width:100%;" title="Polyfork 3D Asset Credits (CC BY 4.0)">📜 Asset Credits</button>
-          </div>
-        </div>
-      </div>
-
-      <button id="settings-top-btn" title="Accessibility & Render Settings">⚙ <span class="hide-tablet">Settings</span></button>
-      <button id="toggle-right-btn" title="Toggle Inspector Panel">▤ <span class="hide-tablet">Panel</span></button>
-    </div>
-  </header>
-
-  <!-- COLLAPSIBLE LEFT NAVIGATION SIDEBAR (Supports Icon-Only Mode) -->
-  <nav id="left-nav" aria-label="Main Application Navigation">
+  <!-- DESKTOP LEFT NAVIGATION RAIL (5 Screens + District Shortcuts) -->
+  <nav id="left-nav" aria-label="Desktop Primary Navigation">
     <div>
-      <div class="nav-section-title"><span class="nav-text">Views & Analysis</span></div>
-      <button class="nav-btn active" data-view="overview" title="1. City Overview & Entire Market Camera">
-        <span class="nav-icon">🌐</span><span class="nav-text">1. Overview & City</span>
+      <div class="nav-section-title"><span class="nav-text">Screens</span></div>
+      <button class="nav-btn active" data-route="city" title="1. 3D City View">
+        <span class="nav-icon">🌐</span><span class="nav-text">1. City</span>
       </button>
-      <button class="nav-btn" data-view="companies" title="2. Listed Companies Directory">
-        <span class="nav-icon">🏢</span><span class="nav-text" id="nav-companies-label">2. Companies</span>
+      <button class="nav-btn" data-route="markets" title="2. Market Indices & Sectors">
+        <span class="nav-icon">📊</span><span class="nav-text">2. Markets</span>
       </button>
-      <button class="nav-btn" data-view="sectors" title="3. Sector Districts Breakdown">
-        <span class="nav-icon">📊</span><span class="nav-text" id="nav-sectors-label">3. Sectors</span>
+      <button class="nav-btn" data-route="companies" title="3. Listed Companies Directory">
+        <span class="nav-icon">🏢</span><span class="nav-text" id="nav-companies-label">3. Companies</span>
       </button>
-      <button class="nav-btn" data-view="indices" title="4. Benchmark Indices & Market Breadth">
-        <span class="nav-icon">📈</span><span class="nav-text">4. Indices & Breadth</span>
+      <button class="nav-btn" data-route="learn" title="4. Financial Literacy Curriculum">
+        <span class="nav-icon">🎓</span><span class="nav-text" id="nav-learn-label">4. Learn</span>
       </button>
-      <button class="nav-btn" data-view="compare" title="5. Side-by-Side Company Comparison (2–4)">
-        <span class="nav-icon">⚖️</span><span class="nav-text">5. Compare (2–4)</span>
-      </button>
-      <button class="nav-btn" data-view="watchlist" title="6. Personal Watchlist">
-        <span class="nav-icon">⭐</span><span class="nav-text">6. Watchlist</span>
-      </button>
-      <button class="nav-btn" data-view="portfolio" title="7. Hypothetical Portfolio Explorer">
-        <span class="nav-icon">💼</span><span class="nav-text">7. Portfolio</span>
-      </button>
-      <button class="nav-btn" data-view="whatif" title="8. What-If Calculator & Event Simulator">
-        <span class="nav-icon">⚡</span><span class="nav-text">8. What-If & Events</span>
-      </button>
-      <button class="nav-btn" data-view="learn" title="9. Interactive Financial Literacy Curriculum">
-        <span class="nav-icon">🎓</span><span class="nav-text" id="nav-learn-label">9. Learn Finance</span>
+      <button class="nav-btn" data-route="tools" title="5. Compare, Portfolio & Tools">
+        <span class="nav-icon">🛠️</span><span class="nav-text">5. Tools</span>
       </button>
 
-      <div class="nav-section-title" style="margin-top:10px;"><span class="nav-text">District Quick-Jump</span></div>
+      <div class="nav-section-title" style="margin-top:14px;"><span class="nav-text">3D District Jumps</span></div>
       <button class="camera-preset-btn" data-cam="EXCHANGE" title="Fly to Central Stock Exchange HQ">
         <span class="nav-icon">🏛️</span><span class="nav-text">Exchange HQ</span>
       </button>
@@ -281,182 +265,237 @@
     </div>
 
     <div style="border-top:1px solid var(--border-subtle); padding-top:8px; display:flex; flex-direction:column; gap:4px;">
-      <button id="collapse-icon-mode-btn" style="width:100%; font-size:var(--text-sm);" title="Switch Sidebar between Expanded and Icon-Only Mode">
-        <span class="nav-icon">⇤</span><span class="nav-text">Icon-Only Sidebar</span>
+      <button id="collapse-icon-mode-btn" style="width:100%; min-height:40px; font-size:var(--text-sm);" title="Toggle Sidebar Width">
+        <span class="nav-icon">⇤</span><span class="nav-text">Collapse Rail</span>
       </button>
-      <div class="nav-legal-links" style="padding:6px 8px; font-size:11px; color:var(--text-muted); display:flex; flex-wrap:wrap; gap:6px;">
-        <a href="#credits" id="footer-credits-link" style="color:var(--text-secondary); text-decoration:none;">3D Credits</a> •
-        <a href="#privacy" id="footer-privacy-link" style="color:var(--text-secondary); text-decoration:none;">Privacy</a> •
-        <a href="#terms" id="footer-terms-link" style="color:var(--text-secondary); text-decoration:none;">Terms</a>
-      </div>
     </div>
   </nav>
 
-  <!-- TOP OVERLAY: 4 PRIMARY SUMMARY CARDS + REPLAY SCRUBBER & TELEMETRY BAR -->
-  <section id="top-overlay" aria-label="Market Summary Cards">
-    <div class="summary-cards-row">
-      <div class="summary-card" data-summary-card="NIFTY" title="Cap-weighted benchmark index of large liquid NSE constituents in the MarketVerse city.">
-        <div class="card-header">
-          <span>NIFTY 50 <span class="badge sim">SIMULATED</span></span>
-          <button class="help-icon" data-concept="indices" title="Understand Market Indices" aria-label="Understand Market Indices">?</button>
-        </div>
-        <div class="card-value-row">
-          <span class="card-main-val num" id="card-nifty-val">22,450.00</span>
-          <span class="badge neu num" id="card-nifty-chg">—</span>
-        </div>
-        <div class="card-sub-row">
-          <span id="card-nifty-prev" class="num">Prev: 22,450.00</span>
-          <svg class="sparkline-svg" id="spark-nifty" aria-hidden="true"></svg>
-        </div>
-      </div>
+  <!-- MOBILE BOTTOM NAVIGATION TAB BAR (5 TABS) -->
+  <nav id="mobile-bottom-nav" aria-label="Mobile Navigation">
+    <button class="mob-nav-btn active" data-route="city"><span>🌐</span><span>City</span></button>
+    <button class="mob-nav-btn" data-route="markets"><span>📊</span><span>Markets</span></button>
+    <button class="mob-nav-btn" data-route="companies"><span>🏢</span><span>Companies</span></button>
+    <button class="mob-nav-btn" data-route="learn"><span>🎓</span><span>Learn</span></button>
+    <button class="mob-nav-btn" data-route="tools"><span>🛠️</span><span>Tools</span></button>
+  </nav>
 
-      <div class="summary-card" data-summary-card="SENSEX" title="Cap-weighted benchmark index of major BSE constituents in the MarketVerse city.">
-        <div class="card-header">
-          <span>SENSEX <span class="badge sim">SIMULATED</span></span>
-          <button class="help-icon" data-concept="indices" title="Understand Market Indices" aria-label="Understand Market Indices">?</button>
-        </div>
-        <div class="card-value-row">
-          <span class="card-main-val num" id="card-sensex-val">73,890.00</span>
-          <span class="badge neu num" id="card-sensex-chg">—</span>
-        </div>
-        <div class="card-sub-row">
-          <span id="card-sensex-prev" class="num">Prev: 73,890.00</span>
-          <svg class="sparkline-svg" id="spark-sensex" aria-hidden="true"></svg>
-        </div>
-      </div>
+  <!-- DEDICATED SCREEN CONTAINERS FOR 4 NON-CITY ROUTES -->
+  <main id="screen-markets" class="screen-container" style="display:none;" role="region" aria-label="Markets Screen"></main>
+  <main id="screen-companies" class="screen-container" style="display:none;" role="region" aria-label="Companies Screen"></main>
+  <main id="screen-learn" class="screen-container" style="display:none;" role="region" aria-label="Learn Screen"></main>
+  <main id="screen-tools" class="screen-container" style="display:none;" role="region" aria-label="Tools Screen"></main>
 
-      <div class="summary-card" data-summary-card="MCAP" title="Sum of (Share Price × Outstanding Shares) across all listed companies in MarketVerse.">
-        <div class="card-header">
-          <span>City M-Cap <span class="badge sim">SIMULATED</span></span>
-          <button class="help-icon" data-concept="marketCap" title="Understand Market Capitalization" aria-label="Understand Market Capitalization">?</button>
-        </div>
-        <div class="card-value-row">
-          <span class="card-main-val num" id="card-mcap-val">—</span>
-          <span class="badge neu num" id="card-mcap-chg">—</span>
-        </div>
-        <div class="card-sub-row">
-          <span id="card-mcap-count">Listed Companies</span>
-          <svg class="sparkline-svg" id="spark-mcap" aria-hidden="true"></svg>
-        </div>
-      </div>
-
-      <div class="summary-card" data-summary-card="VOL" title="Total shares traded in the session and overall advancing vs. declining breadth.">
-        <div class="card-header">
-          <span>Volume & Mood <span class="badge sim">SIMULATED</span></span>
-          <button class="help-icon" data-concept="volume" title="Understand Trading Volume" aria-label="Understand Trading Volume">?</button>
-        </div>
-        <div class="card-value-row">
-          <span class="card-main-val num" id="card-vol-val">—</span>
-          <span class="badge neu" id="card-mood-badge">SIDEWAYS</span>
-        </div>
-        <div class="card-sub-row">
-          <span id="card-breadth-mini">Adv: 0 | Dec: 0</span>
-          <svg class="sparkline-svg" id="spark-vol" aria-hidden="true"></svg>
-        </div>
-      </div>
-    </div>
-
-    <!-- Compact Replay Scrubber + Heatmap Legend + Render Telemetry Bar -->
-    <div class="sim-toolbar">
-      <div class="sim-controls-group" style="width:100%; justify-content:space-between;">
-        <div style="display:flex; align-items:center; gap:8px; flex:1;">
-          <span style="font-size:var(--text-sm); color:var(--text-secondary); font-weight:600;">⏪ Replay Timeline:</span>
-          <input type="range" id="replay-slider" min="0" max="0" value="0" style="flex:1; max-width:220px;" aria-label="Replay Timeline Scrubber" title="Scrub recorded simulation history without mutating live state" />
-          <span class="badge sim num" id="replay-step-label">Live</span>
-          <button id="replay-live-btn" style="display:none; padding:2px 8px; font-size:var(--text-sm);" class="primary" title="Return to Unmutated Live State">● Return to Live</button>
-        </div>
-
-        <!-- Sector Heatmap Legend (shown when heatmap is active) -->
-        <div id="heatmap-legend-pill" style="display:none; align-items:center; gap:6px; font-size:var(--text-sm);">
-          <span>🔥 Heatmap:</span>
-          <span class="badge neg">≤ -2%</span>
-          <span class="badge neu">0%</span>
-          <span class="badge pos">≥ +2%</span>
-        </div>
-
-        <!-- Live Performance Telemetry (Hidden behind developer flag by default) -->
-        <div id="perf-telemetry-pill" class="num hide-tablet" style="display:none; font-size:11px; color:var(--text-muted);" title="Live WebGL Render Telemetry (FPS • Draw Calls • Triangles)">
-          60 FPS • 0 draws • 0 tris
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- FLOATING VIEWPORT TOGGLES & ACCESSIBLE CAMERA D-PAD -->
-  <div id="viewport-toggles">
-    <button id="fullscreen-city-btn" title="Collapse or Restore All Panels to Inspect Full 3D City">⛶ Expand City</button>
-    <button id="reset-cam-btn" title="Reset Camera to Entire Market View">🎯 Reset View</button>
-    <div class="cam-dpad" role="group" aria-label="On-Screen Camera Rotate and Zoom Controls">
-      <button id="cam-rot-left-btn" title="Orbit Left" aria-label="Orbit Camera Left">↺</button>
-      <button id="cam-rot-right-btn" title="Orbit Right" aria-label="Orbit Camera Right">↻</button>
-      <button id="cam-tilt-up-btn" title="Tilt Camera Up" aria-label="Tilt Camera Up">↑</button>
-      <button id="cam-tilt-down-btn" title="Tilt Camera Down" aria-label="Tilt Camera Down">↓</button>
-      <button id="cam-zoom-in-btn" title="Zoom In" aria-label="Zoom In">+</button>
-      <button id="cam-zoom-out-btn" title="Zoom Out" aria-label="Zoom Out">−</button>
-      <button id="cam-idle-toggle-btn" title="Toggle Gentle Auto-Orbit" aria-label="Toggle Auto Orbit">⟳</button>
-    </div>
-  </div>
-
-  <!-- CLICKABLE 2D CITY MINIMAP -->
-  <div id="minimap-container" title="Click or drag to move camera across districts">
-    <div class="minimap-header">
-      <span>CITY RADAR</span>
-      <button id="minimap-toggle-btn" aria-label="Minimize or Restore Minimap" style="padding:0 4px; font-size:10px; border:none; background:transparent;">−</button>
-    </div>
-    <canvas id="city-minimap" width="150" height="145" aria-label="Clickable 2D City Minimap"></canvas>
-  </div>
-
-  <!-- RIGHT INSPECTOR / MOBILE BOTTOM-SHEET PANEL -->
-  <aside id="right-panel" class="sheet-half" aria-label="Selected Object & Analysis Inspector">
-    <div id="inspector-sheet-handle" class="sheet-drag-handle" title="Tap or drag to resize Inspector sheet (Peek / Half / Full)" role="button" tabindex="0" aria-label="Resize Inspector Sheet">
+  <!-- RIGHT INSPECTOR PANEL / MOBILE BOTTOM SHEET -->
+  <aside id="right-panel" class="sheet-half mobile-sheet closed" aria-label="Selected Object Inspector">
+    <div id="inspector-sheet-handle" class="sheet-drag-handle" title="Tap to cycle sheet height (Peek / Half / Full)" role="button" tabindex="0" aria-label="Resize Inspector Sheet">
       <span class="sheet-handle-bar"></span>
     </div>
     <div class="panel-header">
       <span class="panel-title" id="inspector-title">City Inspector</span>
-      <div style="display:flex; gap:5px;">
-        <button id="deselect-btn" style="display:none; padding:3px 7px; font-size:var(--text-sm);">✕ Deselect</button>
+      <div style="display:flex; gap:6px;">
+        <button id="deselect-btn" style="display:none; padding:4px 8px; font-size:var(--text-sm); min-height:36px;">✕ Deselect</button>
+        <button data-close-sheet="right-panel" style="padding:4px 8px; font-size:var(--text-sm); min-height:36px;" aria-label="Close Inspector">✕</button>
       </div>
     </div>
     <div class="panel-body" id="inspector-body"></div>
   </aside>
 
-  <!-- BOTTOM PANEL: TABLES, CHARTS, SECTORS, EVENTS -->
-  <section id="bottom-panel" aria-label="Market Activity Tables and Historical Charts">
-    <div class="bottom-tabs-bar">
-      <div class="tab-group" role="tablist">
-        <button class="tab-btn active" role="tab" data-btab="companies" id="btab-companies-btn">Companies</button>
-        <button class="tab-btn" role="tab" data-btab="sectors" id="btab-sectors-btn">Sectors</button>
-        <button class="tab-btn" role="tab" data-btab="indices">Indices & Breadth</button>
-        <button class="tab-btn" role="tab" data-btab="events">Economic Events</button>
-        <button class="tab-btn" role="tab" data-btab="history">Interactive Chart</button>
+  <!-- SIMULATION CONTROLS SHEET -->
+  <aside id="sheet-simulation" class="mobile-sheet closed" aria-label="Simulation Controls Sheet">
+    <div class="sheet-drag-handle" role="button" tabindex="0" aria-label="Resize Simulation Sheet">
+      <span class="sheet-handle-bar"></span>
+    </div>
+    <div class="panel-header">
+      <span class="panel-title">⏱️ Simulation Controls</span>
+      <button data-close-sheet="sheet-simulation" style="padding:4px 8px; font-size:var(--text-sm); min-height:36px;" aria-label="Close Simulation Sheet">✕</button>
+    </div>
+    <div class="panel-body">
+      <!-- Session Clock & Status -->
+      <div class="section-card" style="margin-bottom:12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-weight:700; font-size:var(--text-md);">Market Session Clock</span>
+          <span id="sheet-sim-clock" class="num badge sim" style="font-size:14px;">10:15:00 IST</span>
+        </div>
+        <div style="display:flex; gap:8px; margin-top:10px;">
+          <button id="sheet-sim-play-btn" class="primary" style="flex:1; min-height:44px;">⏸ Pause Sim</button>
+          <button id="sheet-sim-step-btn" style="flex:1; min-height:44px;">Step +1 Tick</button>
+        </div>
       </div>
-      <div style="display:flex; align-items:center; gap:6px;">
-        <input type="text" id="table-filter-input" placeholder="Filter rows..." style="padding:3px 7px; font-size:var(--text-sm); width:140px;" aria-label="Filter active table" />
-        <button id="toggle-bottom-btn" style="padding:2px 7px; font-size:var(--text-sm);" title="Collapse or Expand Bottom Panel" aria-label="Toggle Bottom Panel">▼</button>
+
+      <!-- Simulation Speed & Reset -->
+      <div class="section-card" style="margin-bottom:12px;">
+        <div style="font-size:var(--text-sm); color:var(--text-secondary); margin-bottom:6px;">Simulation Speed:</div>
+        <div class="speed-pill-group" style="display:flex; gap:6px; margin-bottom:10px;">
+          <button class="sim-speed-btn" data-speed="0.5" style="flex:1; min-height:44px;">0.5×</button>
+          <button class="sim-speed-btn active" data-speed="1" style="flex:1; min-height:44px;">1×</button>
+          <button class="sim-speed-btn" data-speed="3" style="flex:1; min-height:44px;">3×</button>
+        </div>
+        <button id="sheet-sim-reset-btn" style="width:100%; min-height:44px;">↺ Reset Simulation to Seed</button>
+      </div>
+
+      <!-- Replay Scrubber -->
+      <div class="section-card" style="margin-bottom:12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <span style="font-weight:600; font-size:var(--text-sm);">⏪ History Replay Scrubber:</span>
+          <span id="sheet-replay-step" class="badge sim num">Live</span>
+        </div>
+        <input type="range" id="sheet-replay-slider" min="0" max="0" value="0" style="width:100%; margin:8px 0;" aria-label="Replay Timeline Scrubber" />
+        <button id="sheet-replay-live-btn" class="primary" style="display:none; width:100%; min-height:44px; margin-top:6px;">● Return to Live State</button>
+      </div>
+
+      <!-- Macro Events Scenario Runner -->
+      <div class="section-card" style="margin-bottom:12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <span style="font-weight:700;">Macro Shocks (7 Scenarios)</span>
+          <button id="sheet-end-event-btn" style="display:none; padding:2px 8px; font-size:11px;">⏹ End Event</button>
+        </div>
+        <div id="sheet-active-ev-badge" class="badge pos" style="display:none; margin-bottom:8px;"></div>
+        <div id="sim-events-list" style="display:flex; flex-direction:column; gap:6px;"></div>
+      </div>
+
+      <!-- Guided Story Mode & Data Mode -->
+      <div class="section-card">
+        <button id="sheet-story-btn" class="primary" style="width:100%; min-height:44px; margin-bottom:8px;">🎬 Start 60-Second Story Mode</button>
+        <div style="font-size:var(--text-sm); color:var(--text-secondary); margin-bottom:4px;">Data Source:</div>
+        <select id="data-mode-select" style="width:100%; min-height:44px;">
+          <option value="SIMULATION" selected>Simulation Engine (Seeded Indian Market)</option>
+          <option value="REAL_DATA">Real-Data Adapter Mode</option>
+        </select>
       </div>
     </div>
-    <div class="bottom-content" id="bottom-content"></div>
-  </section>
+  </aside>
 
-  <!-- MOBILE BOTTOM NAVIGATION BAR (<= 768px) -->
-  <nav id="mobile-bottom-nav" aria-label="Mobile Primary Navigation">
-    <button class="mob-nav-btn active" data-mob-view="overview"><span>🌐</span><span>City</span></button>
-    <button class="mob-nav-btn" data-mob-view="companies"><span>🏢</span><span>Stocks</span></button>
-    <button class="mob-nav-btn" data-mob-view="sectors"><span>📊</span><span>Sectors</span></button>
-    <button class="mob-nav-btn" data-mob-view="compare"><span>⚖️</span><span>Compare</span></button>
-    <button class="mob-nav-btn" data-mob-view="portfolio"><span>💼</span><span>Portfolio</span></button>
-    <button class="mob-nav-btn" data-mob-view="learn"><span>🎓</span><span>Learn</span></button>
-  </nav>
+  <!-- SCENE ATMOSPHERE SHEET -->
+  <aside id="sheet-scene" class="mobile-sheet closed" aria-label="3D Scene Atmosphere Sheet">
+    <div class="sheet-drag-handle" role="button" tabindex="0" aria-label="Resize Scene Sheet">
+      <span class="sheet-handle-bar"></span>
+    </div>
+    <div class="panel-header">
+      <span class="panel-title">🌤️ 3D Scene Atmosphere</span>
+      <button data-close-sheet="sheet-scene" style="padding:4px 8px; font-size:var(--text-sm); min-height:36px;" aria-label="Close Scene Sheet">✕</button>
+    </div>
+    <div class="panel-body">
+      <div class="section-card" style="margin-bottom:12px;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
+          <button id="day-night-btn" style="min-height:44px;">☀️ Day</button>
+          <button id="auto-cycle-btn" style="min-height:44px;">🔄 Auto Solar</button>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
+          <button id="labels-toggle-btn" class="active" style="min-height:44px;">🏷️ Labels: On</button>
+          <button id="atmo-override-btn" class="active" style="min-height:44px;">🌤️ Mood Sky</button>
+        </div>
+        <button id="heatmap-toggle-btn" style="width:100%; min-height:44px;">🔥 Sector Heatmap: Off</button>
+      </div>
 
-  <!-- MODAL FOR "UNDERSTAND THIS" LESSONS, SHORTCUTS, QA & SETTINGS -->
+      <div class="section-card" style="margin-bottom:12px;">
+        <label style="font-size:var(--text-sm); color:var(--text-secondary); display:block; margin-bottom:4px;">Atmosphere & Weather:</label>
+        <select id="weather-select" style="width:100%; min-height:44px; margin-bottom:10px;">
+          <option value="CLEAR">Weather: Clear Day</option>
+          <option value="CLOUDY">Weather: Cloudy</option>
+          <option value="RAIN">Weather: Light Rain</option>
+          <option value="EVENING">Atmosphere: Evening</option>
+          <option value="NIGHT">Atmosphere: Night</option>
+        </select>
+
+        <label style="font-size:var(--text-sm); color:var(--text-secondary); display:block; margin-bottom:4px;">Graphics Quality:</label>
+        <select id="quality-select" style="width:100%; min-height:44px; margin-bottom:10px;">
+          <option value="AUTO" selected>Quality: Auto-Detect</option>
+          <option value="HIGH">Quality: High (Bloom + PCF Soft Shadows)</option>
+          <option value="MEDIUM">Quality: Medium</option>
+          <option value="LOW">Quality: Low (Battery Saver)</option>
+        </select>
+
+        <button id="scene-theme-toggle-btn" style="width:100%; min-height:44px;">🎨 Toggle Daylight / Dark Theme</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN MENU DRAWER -->
+  <aside id="drawer-menu" class="mobile-sheet closed" aria-label="Main Menu Drawer">
+    <div class="sheet-drag-handle" role="button" tabindex="0" aria-label="Resize Menu Drawer">
+      <span class="sheet-handle-bar"></span>
+    </div>
+    <div class="panel-header">
+      <span class="panel-title">☰ MarketVerse Menu</span>
+      <button data-close-sheet="drawer-menu" style="padding:4px 8px; font-size:var(--text-sm); min-height:36px;" aria-label="Close Menu Drawer">✕</button>
+    </div>
+    <div class="panel-body">
+      <!-- Screen Shortcuts -->
+      <div class="section-card" style="margin-bottom:12px;">
+        <h4 style="margin-top:0; margin-bottom:8px;">Screens</h4>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+          <button data-menu-route="city" style="min-height:44px;">🌐 3D City</button>
+          <button data-menu-route="markets" style="min-height:44px;">📊 Markets</button>
+          <button data-menu-route="companies" style="min-height:44px;">🏢 Companies</button>
+          <button data-menu-route="learn" style="min-height:44px;">🎓 Learn</button>
+          <button data-menu-route="tools" style="min-height:44px; grid-column:span 2;">🛠️ Analysis Tools</button>
+        </div>
+      </div>
+
+      <!-- Guided Experiences -->
+      <div class="section-card" style="margin-bottom:12px;">
+        <h4 style="margin-top:0; margin-bottom:8px;">Guided Experiences</h4>
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <button id="menu-tour-btn" class="primary" style="min-height:44px; text-align:left;">🎓 Take Guided Tour Again</button>
+          <button id="menu-replay-intro-btn" style="min-height:44px; text-align:left;">🎬 Replay Intro Motion Graphics</button>
+          <button id="menu-story-btn" style="min-height:44px; text-align:left;">🎬 Launch 60-Second Story Mode</button>
+        </div>
+      </div>
+
+      <!-- Utilities & Settings -->
+      <div class="section-card" style="margin-bottom:12px;">
+        <h4 style="margin-top:0; margin-bottom:8px;">Workspace & Utilities</h4>
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <button id="menu-edu-mode-btn" style="min-height:44px; text-align:left;">🌓 Preset: <span id="edu-mode-label">Beginner</span></button>
+          <button id="menu-sound-btn" style="min-height:44px; text-align:left;">🔇 Sound: Muted</button>
+          <button id="menu-screenshot-btn" style="min-height:44px; text-align:left;">📷 Export Watermarked Screenshot</button>
+          <button id="menu-shortcuts-btn" style="min-height:44px; text-align:left;">⌨ Keyboard Shortcuts Help (?)</button>
+          <button id="menu-qa-btn" style="min-height:44px; text-align:left;">🧪 Run 18 Acceptance Tests (QA)</button>
+        </div>
+      </div>
+
+      <!-- Legal & Credits Links -->
+      <div class="section-card">
+        <h4 style="margin-top:0; margin-bottom:8px;">About & Legal</h4>
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <button id="menu-credits-btn" style="min-height:44px; text-align:left; color:var(--accent);">📜 3D Asset Credits (CC BY 4.0)</button>
+          <button id="menu-privacy-btn" style="min-height:44px; text-align:left;">🔒 Privacy Policy</button>
+          <button id="menu-terms-btn" style="min-height:44px; text-align:left;">⚖️ Terms of Service</button>
+          <button id="menu-disclaimer-btn" style="min-height:44px; text-align:left;">⚠️ Educational Disclaimer</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- GLOBAL SEARCH MODAL -->
+  <div id="search-modal-wrap" class="search-modal-wrap closed" role="dialog" aria-modal="true" aria-label="Global Search">
+    <div class="search-modal-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <span style="font-weight:700; font-size:var(--text-lg);">Search MarketVerse</span>
+        <button data-close-sheet="search-modal-wrap" style="padding:4px 8px; font-size:var(--text-sm); min-height:36px;">✕ Close</button>
+      </div>
+      <input type="text" id="global-search-input" placeholder="Search companies, tickers, sectors, or financial concepts..." style="width:100%; min-height:48px; font-size:15px; margin-bottom:10px;" autocomplete="off" />
+      <div id="search-results-box" class="search-results-box">
+        <div style="padding:16px; color:var(--text-muted); text-align:center;">Type ticker, company name, sector, or lesson title...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONCEPT & QA MODAL -->
   <div id="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="modal-card">
       <div class="panel-header">
         <span class="panel-title" id="modal-title">Understand This Concept</span>
-        <button id="modal-close-btn">✕ Close</button>
+        <button id="modal-close-btn" style="min-height:36px;">✕ Close</button>
       </div>
       <div class="modal-body" id="modal-body"></div>
     </div>
+  </div>
+
+  <!-- Live Render Telemetry Pill (Strictly hidden unless URL contains ?debug=1) -->
+  <div id="perf-telemetry-pill" class="num" style="display:none;" title="Live WebGL Render Telemetry (FPS • Draw Calls • Triangles)">
+    60 FPS • 0 draws • 0 tris
   </div>
 
   <script type="module" src="/src/main.js"></script>

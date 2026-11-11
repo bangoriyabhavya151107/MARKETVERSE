@@ -26,6 +26,8 @@ import { initBottomPanelEvents, mountBottomPanel, updateBottomPanelOnTick } from
 import { initModalEvents, openQATestModal } from './ui/modal.js';
 import { initDynamicCountLabels, setLoadingProgress, finishLoadingAndStartIntro, playUiSound } from './ui/onboarding.js';
 import { preloadPolyforkModels } from './world/modelLoader.js';
+import { initPanelManager, openPanel } from './ui/panels.js';
+import { initRouter, renderActiveScreen, getCurrentRoute } from './ui/router.js';
 
 async function boot() {
   setLoadingProgress(10, 'Loading Seeded Indian Market Dataset...');
@@ -70,15 +72,21 @@ async function boot() {
   update3DCityFromState(store.getViewState());
   updateCameraImmediate();
 
-  setLoadingProgress(92, 'Wiring Interactive Controls & Analytics...');
+  setLoadingProgress(92, 'Wiring Interactive Screens & Controls...');
+  initPanelManager();
   setupViewportControls();
   initTopBarEvents();
   initLeftNavEvents();
   initBottomPanelEvents();
   initModalEvents();
+  initRouter();
 
   store.subscribe('selection', () => {
     playUiSound('select');
+    // Open inspector panel when an object is selected
+    if (store.getViewState().selectedObject) {
+      openPanel('right-panel');
+    }
   });
 
   store.subscribe(
@@ -87,12 +95,14 @@ async function boot() {
       updateTopBarAndSummaryCards(viewState);
       mountInspectorPanel(viewState);
       mountBottomPanel(viewState);
+      renderActiveScreen(getCurrentRoute(), viewState);
     }
   );
 
   store.subscribe(['bottomTab', 'filter', 'event'], viewState => {
     updateTopBarAndSummaryCards(viewState);
     mountBottomPanel(viewState);
+    renderActiveScreen(getCurrentRoute(), viewState);
   });
 
   store.subscribe('alerts', viewState => {
@@ -104,6 +114,7 @@ async function boot() {
     updateTopBarAndSummaryCards(viewState);
     updateInspectorPanelOnTick(viewState);
     updateBottomPanelOnTick(viewState);
+    renderActiveScreen(getCurrentRoute(), viewState);
   });
 
   const viewAtMount = store.getViewState();
@@ -118,10 +129,12 @@ async function boot() {
     setTimeout(() => openQATestModal(), 500);
   }
 
+  // Debug FPS & render telemetry flag: ONLY visible if ?debug=1 is in URL
   const perfPill = document.getElementById('perf-telemetry-pill');
-  if (perfPill && (window.location.search.includes('debug=1') || window.location.search.includes('dev=1'))) {
-    perfPill.style.display = 'block';
+  if (perfPill && window.location.search.includes('debug=1')) {
+    perfPill.style.display = 'inline-flex';
   }
+
   let lastFrameTime = performance.now();
   let simAccumulator = 0;
   let telemetryAccumulator = 0;
@@ -163,7 +176,7 @@ async function boot() {
     updateMinimap();
 
     telemetryAccumulator += dt;
-    if (telemetryAccumulator >= 0.5 && perfPill) {
+    if (telemetryAccumulator >= 0.5 && perfPill && perfPill.style.display !== 'none') {
       telemetryAccumulator = 0;
       const stats = getRenderTelemetry();
       perfPill.textContent = `${stats.fps} FPS • ${stats.calls} draws • ${(stats.triangles / 1000).toFixed(1)}k tris`;

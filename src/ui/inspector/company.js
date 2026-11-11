@@ -50,6 +50,9 @@ export function mountCompanyInspector(companyId, titleEl, bodyEl, viewState) {
     </div>
 
     <div style="display:flex; gap:6px; margin-top:8px;">
+      <button id="comp-fly-3d-btn" class="primary" style="flex:1;" title="Fly camera to building in 3D City">
+        🌐 View in 3D City
+      </button>
       <button id="comp-watchlist-btn" style="flex:1;" class="${inWatchlist ? 'active' : ''}">
         ${inWatchlist ? '★ Watched' : '☆ Watchlist'}
       </button>
@@ -199,6 +202,11 @@ export function mountCompanyInspector(companyId, titleEl, bodyEl, viewState) {
     const chartBox = bodyEl.querySelector('#comp-inspector-chart-box');
     mountHistoricalChart(chartBox, viewState, c.id, true);
   }
+
+  bodyEl.querySelector('#comp-fly-3d-btn')?.addEventListener('click', () => {
+    window.location.hash = '#/city';
+    selectWorldObject('COMPANY', c.id, true);
+  });
 
   bodyEl.querySelector('#comp-sector-link').addEventListener('click', () => {
     selectWorldObject('SECTOR', c.sector, true);

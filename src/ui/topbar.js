@@ -1,6 +1,7 @@
 /**
- * Simplified 3-Group Top Bar, Beginner/Pro Presets, Story Mode (60s), Sound Toggle,
- * Events & Scene Popovers, Animated Summary Card Counters, and Global Search.
+ * MarketVerse Slim Top Bar (Max 5 Visible Items), Simulation Sheet,
+ * Scene Atmosphere Sheet, Main Menu Drawer, Global Search Modal,
+ * and Animated Market Cards & Pulse Chip.
  */
 import { store } from '../state/store.js';
 import { SECTORS } from '../data/sectors.js';
@@ -14,6 +15,8 @@ import { setReplayIndex, returnToLiveReplay } from '../engine/replay.js';
 import { selectWorldObject, clearSelection } from '../controls/picking.js';
 import { applyCameraPreset } from '../controls/cameraRig.js';
 import { update3DCityFromState } from '../world/buildings.js';
+import { applyWeatherAndLighting } from '../world/weather.js';
+import { syncQualitySettings } from '../world/postfx.js';
 import { drawSparkline } from './charts.js';
 import {
   openConceptModal,
@@ -26,7 +29,9 @@ import {
   openTermsModal
 } from './modal.js';
 import { startOnboardingTour, startStoryMode, exportWatermarkedScreenshot, playUiSound } from './onboarding.js';
-import { switchLeftNavView } from './leftNav.js';
+import { replayIntro } from './intro.js';
+import { openPanel, closePanel, closeAllPanels } from './panels.js';
+import { navigateTo, updateMarketPulseChip } from './router.js';
 import { showToast } from './toasts.js';
 
 const EVENT_ICONS = {
@@ -53,7 +58,7 @@ function animateCounterText(elId, fromVal, toVal, formatter) {
     return;
   }
   const start = performance.now();
-  const dur = 260;
+  const dur = 240;
   function tick(now) {
     const p = Math.min(1, (now - start) / dur);
     const cur = fromVal + (toVal - fromVal) * p;
@@ -70,9 +75,7 @@ export function applyWorkspacePreset(isBeginner) {
   if (lbl) lbl.textContent = isBeginner ? 'Beginner' : 'Pro';
 
   if (!isBeginner) {
-    // Pro Preset: enable sector heatmap and expand bottom data table
     live.heatmapMode = true;
-    document.body.classList.remove('bottom-collapsed');
   } else {
     live.heatmapMode = false;
   }
@@ -87,13 +90,16 @@ export function applyWorkspacePreset(isBeginner) {
   store.emit('settings');
   showToast(
     isBeginner
-      ? 'Beginner Preset active: simplified core metrics & guided callouts.'
-      : 'Pro Preset active: P/E & Yield valuation columns + Sector Heatmap enabled.'
+      ? 'Beginner Preset: simplified core metrics & guided callouts.'
+      : 'Pro Preset: full valuation metrics & Sector Heatmap enabled.'
   );
 }
 
-export function renderEventsPopoverList(viewState = store.getViewState()) {
-  const listEl = document.getElementById('events-popover-list');
+/**
+ * Renders the 7 friendly-named events inside the Simulation Sheet.
+ */
+export function renderEventsSheetList(viewState = store.getViewState()) {
+  const listEl = document.getElementById('sim-events-list');
   if (!listEl) return;
 
   listEl.innerHTML = Object.values(ECONOMIC_EVENTS)
@@ -101,12 +107,16 @@ export function renderEventsPopoverList(viewState = store.getViewState()) {
       const isAct = viewState.activeEventId === ev.id;
       const icon = EVENT_ICONS[ev.id] || '⚡';
       return `
-        <div class="event-popover-item ${isAct ? 'active' : ''}" role="menuitem" tabindex="0" data-ev-item="${ev.id}">
-          <span style="font-size:16px;">${icon}</span>
+        <div class="event-popover-item ${isAct ? 'active' : ''}" role="button" tabindex="0" data-ev-item="${ev.id}">
+          <span style="font-size:18px;">${icon}</span>
           <div style="flex:1;">
             <div style="font-weight:700; font-size:var(--text-sm);">${ev.name}</div>
-            <div style="font-size:11px; color:var(--text-secondary);">${ev.description}</div>
+            <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">${ev.description}</div>
+            ${ev.durationTicks > 0 ? `<div style="font-size:10.5px; color:var(--accent); margin-top:2px;">Decays over ${ev.durationTicks} ticks</div>` : ''}
           </div>
+          <button class="${isAct ? 'active' : 'primary'}" style="padding:4px 8px; font-size:11px; align-self:center;">
+            ${isAct ? 'Active' : ev.id === 'NONE' ? 'End' : 'Simulate'}
+          </button>
         </div>
       `;
     })
@@ -118,14 +128,15 @@ export function renderEventsPopoverList(viewState = store.getViewState()) {
       if (evId === 'NONE') {
         endActiveEvent();
         update3DCityFromState(store.getViewState());
-        showToast('Active event ended. Live simulation continues.');
+        showToast('Active event ended. Simulation continues.');
       } else {
         applyEconomicEvent(evId);
         playUiSound('event');
         update3DCityFromState(store.getViewState());
         showToast(`⚡ Event triggered: ${ECONOMIC_EVENTS[evId].name}`);
       }
-      document.getElementById('events-popover-menu').style.display = 'none';
+      renderEventsSheetList(store.getViewState());
+      updateTopBarAndSummaryCards(store.getViewState());
     };
     item.addEventListener('click', trigger);
     item.addEventListener('keydown', e => {
@@ -137,30 +148,46 @@ export function renderEventsPopoverList(viewState = store.getViewState()) {
   });
 }
 
+export const renderEventsPopoverList = renderEventsSheetList;
+
+/**
+ * Updates top bar clock, session dot, summary cards, and market pulse chip on tick.
+ */
 export function updateTopBarAndSummaryCards(viewState = store.getViewState()) {
   const clockEl = document.getElementById('sim-clock-display');
   const sessionDot = document.getElementById('session-dot');
-  const sessionLabel = document.getElementById('session-label');
+  const sheetClock = document.getElementById('sheet-sim-clock');
 
-  if (viewState.dataMode === 'REAL_DATA') {
-    sessionDot.className = 'status-dot unavail';
-    sessionLabel.textContent = 'UNCONFIGURED';
-    clockEl.textContent = 'NO LIVE FEED';
-  } else {
-    sessionDot.className = 'status-dot' + (viewState.simRunning ? '' : ' paused');
-    sessionLabel.textContent =
-      viewState.replayIndex !== -1 ? 'REPLAY' : viewState.simRunning ? 'SIMULATED' : 'PAUSED';
-    clockEl.textContent = formatSimClock(viewState.simSecondsFromOpen);
+  if (clockEl) {
+    if (viewState.dataMode === 'REAL_DATA') {
+      clockEl.textContent = 'NO LIVE FEED';
+    } else {
+      clockEl.textContent = formatSimClock(viewState.simSecondsFromOpen);
+    }
   }
 
-  const heatLegend = document.getElementById('heatmap-legend-pill');
-  if (heatLegend) {
-    heatLegend.style.display = viewState.heatmapMode ? 'inline-flex' : 'none';
+  if (sheetClock) {
+    sheetClock.textContent = formatSimClock(viewState.simSecondsFromOpen);
   }
 
-  const slider = document.getElementById('replay-slider');
-  const stepLbl = document.getElementById('replay-step-label');
-  const liveBtn = document.getElementById('replay-live-btn');
+  if (sessionDot) {
+    if (viewState.dataMode === 'REAL_DATA') {
+      sessionDot.className = 'status-dot unavail';
+    } else {
+      sessionDot.className = 'status-dot' + (viewState.simRunning ? '' : ' paused');
+    }
+  }
+
+  // Update Simulation Sheet play/pause button label
+  const sheetPlayBtn = document.getElementById('sheet-sim-play-btn');
+  if (sheetPlayBtn) {
+    sheetPlayBtn.textContent = viewState.simRunning ? '⏸ Pause Sim' : '▶ Resume Sim';
+  }
+
+  // Replay slider inside Simulation Sheet
+  const slider = document.getElementById('sheet-replay-slider');
+  const stepLbl = document.getElementById('sheet-replay-step');
+  const liveBtn = document.getElementById('sheet-replay-live-btn');
   if (slider) {
     slider.max = Math.max(0, viewState.replayHistory.length - 1);
     if (viewState.replayIndex === -1) {
@@ -174,83 +201,116 @@ export function updateTopBarAndSummaryCards(viewState = store.getViewState()) {
     }
   }
 
-  const decayBadge = document.getElementById('event-decay-badge');
-  const endEventBtn = document.getElementById('end-event-btn');
+  // Event active indicators
+  const activeEvBadge = document.getElementById('sheet-active-ev-badge');
+  const endEvBtn = document.getElementById('sheet-end-event-btn');
   if (viewState.activeEventId && viewState.activeEventId !== 'NONE') {
-    if (decayBadge) {
-      decayBadge.style.display = 'inline-flex';
-      decayBadge.textContent = `${viewState.eventRemainingTicks}t`;
+    const ev = ECONOMIC_EVENTS[viewState.activeEventId];
+    if (activeEvBadge) {
+      activeEvBadge.style.display = 'inline-flex';
+      activeEvBadge.textContent = `${ev?.name || 'Active'}: ${viewState.eventRemainingTicks}t decay`;
     }
-    if (endEventBtn) endEventBtn.style.display = 'inline-block';
+    if (endEvBtn) endEvBtn.style.display = 'inline-block';
   } else {
-    if (decayBadge) decayBadge.style.display = 'none';
-    if (endEventBtn) endEventBtn.style.display = 'none';
+    if (activeEvBadge) activeEvBadge.style.display = 'none';
+    if (endEvBtn) endEvBtn.style.display = 'none';
   }
-
-  const alertBadge = document.getElementById('alert-count-badge');
-  if (alertBadge) alertBadge.textContent = viewState.triggeredAlerts.length;
 
   const isRealUnconf = viewState.dataMode === 'REAL_DATA';
 
+  // NIFTY Card
   const n = viewState.indices.NIFTY;
-  if (isRealUnconf) {
-    document.getElementById('card-nifty-val').textContent = 'Unavailable';
-  } else {
-    animateCounterText('card-nifty-val', prevCardNums.nifty, n.current, v =>
-      v.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    );
-    prevCardNums.nifty = n.current;
+  const nValEl = document.getElementById('card-nifty-val');
+  if (nValEl) {
+    if (isRealUnconf) {
+      nValEl.textContent = 'Unavailable';
+    } else {
+      animateCounterText('card-nifty-val', prevCardNums.nifty, n.current, v =>
+        v.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      );
+      prevCardNums.nifty = n.current;
+    }
   }
   const nBadge = document.getElementById('card-nifty-chg');
-  nBadge.textContent = isRealUnconf ? 'No Feed' : fmtPct(n.changePercent);
-  nBadge.className = `badge num ${n.changePercent >= 0 ? 'pos' : 'neg'}`;
-  document.getElementById('card-nifty-prev').textContent = isRealUnconf
-    ? 'Configure Adapter'
-    : `Base: ${n.baseLevel.toLocaleString('en-IN')} (${n.constituentCount} const.)`;
+  if (nBadge) {
+    nBadge.textContent = isRealUnconf ? 'No Feed' : fmtPct(n.changePercent);
+    nBadge.className = `badge num ${n.changePercent >= 0 ? 'pos' : 'neg'}`;
+  }
+  const nPrev = document.getElementById('card-nifty-prev');
+  if (nPrev) {
+    nPrev.textContent = isRealUnconf
+      ? 'Configure Adapter'
+      : `Base: ${n.baseLevel.toLocaleString('en-IN')} (${n.constituentCount} const.)`;
+  }
   drawSparkline('spark-nifty', n.history, n.changePercent >= 0 ? '#22A06B' : '#E05255');
 
+  // SENSEX Card
   const s = viewState.indices.SENSEX;
-  if (isRealUnconf) {
-    document.getElementById('card-sensex-val').textContent = 'Unavailable';
-  } else {
-    animateCounterText('card-sensex-val', prevCardNums.sensex, s.current, v =>
-      v.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    );
-    prevCardNums.sensex = s.current;
+  const sValEl = document.getElementById('card-sensex-val');
+  if (sValEl) {
+    if (isRealUnconf) {
+      sValEl.textContent = 'Unavailable';
+    } else {
+      animateCounterText('card-sensex-val', prevCardNums.sensex, s.current, v =>
+        v.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      );
+      prevCardNums.sensex = s.current;
+    }
   }
   const sBadge = document.getElementById('card-sensex-chg');
-  sBadge.textContent = isRealUnconf ? 'No Feed' : fmtPct(s.changePercent);
-  sBadge.className = `badge num ${s.changePercent >= 0 ? 'pos' : 'neg'}`;
-  document.getElementById('card-sensex-prev').textContent = isRealUnconf
-    ? 'Configure Adapter'
-    : `Base: ${s.baseLevel.toLocaleString('en-IN')} (${s.constituentCount} const.)`;
+  if (sBadge) {
+    sBadge.textContent = isRealUnconf ? 'No Feed' : fmtPct(s.changePercent);
+    sBadge.className = `badge num ${s.changePercent >= 0 ? 'pos' : 'neg'}`;
+  }
+  const sPrev = document.getElementById('card-sensex-prev');
+  if (sPrev) {
+    sPrev.textContent = isRealUnconf
+      ? 'Configure Adapter'
+      : `Base: ${s.baseLevel.toLocaleString('en-IN')} (${s.constituentCount} const.)`;
+  }
   drawSparkline('spark-sensex', s.history, s.changePercent >= 0 ? '#22A06B' : '#E05255');
 
+  // MCAP Card
   const t = viewState.totals;
-  document.getElementById('card-mcap-val').textContent = isRealUnconf ? 'Unavailable' : fmtMcapCr(t.mcapCr);
+  const mVal = document.getElementById('card-mcap-val');
+  if (mVal) mVal.textContent = isRealUnconf ? 'Unavailable' : fmtMcapCr(t.mcapCr);
   const mBadge = document.getElementById('card-mcap-chg');
-  mBadge.textContent = isRealUnconf ? 'No Feed' : fmtPct(t.mcapChangePct);
-  mBadge.className = `badge num ${t.mcapChangePct >= 0 ? 'pos' : 'neg'}`;
-  document.getElementById('card-mcap-count').textContent = `${t.listedCount} Listed Companies`;
+  if (mBadge) {
+    mBadge.textContent = isRealUnconf ? 'No Feed' : fmtPct(t.mcapChangePct);
+    mBadge.className = `badge num ${t.mcapChangePct >= 0 ? 'pos' : 'neg'}`;
+  }
+  const mCount = document.getElementById('card-mcap-count');
+  if (mCount) mCount.textContent = `${t.listedCount} Listed Companies`;
   drawSparkline('spark-mcap', t.mcapHistory, t.mcapChangePct >= 0 ? '#22A06B' : '#E05255');
 
-  document.getElementById('card-vol-val').textContent = isRealUnconf ? 'Unavailable' : `${t.volumeCr.toFixed(2)} Cr sh`;
+  // VOL & Mood Card
+  const vVal = document.getElementById('card-vol-val');
+  if (vVal) vVal.textContent = isRealUnconf ? 'Unavailable' : `${t.volumeCr.toFixed(2)} Cr sh`;
   const moodBadge = document.getElementById('card-mood-badge');
-  moodBadge.textContent = isRealUnconf ? 'UNAVAILABLE' : t.mood;
-  moodBadge.className = `badge ${t.mood === 'BULLISH' ? 'pos' : t.mood === 'BEARISH' ? 'neg' : 'neu'}`;
-  document.getElementById('card-breadth-mini').textContent = `Adv: ${t.advancing} | Dec: ${t.declining} | Unch: ${t.unchanged}`;
+  if (moodBadge) {
+    moodBadge.textContent = isRealUnconf ? 'UNAVAILABLE' : t.mood;
+    moodBadge.className = `badge ${t.mood === 'BULLISH' ? 'pos' : t.mood === 'BEARISH' ? 'neg' : 'neu'}`;
+  }
+  const bMini = document.getElementById('card-breadth-mini');
+  if (bMini) bMini.textContent = `Adv: ${t.advancing} | Dec: ${t.declining} | Unch: ${t.unchanged}`;
   drawSparkline('spark-vol', t.volHistory.length > 1 ? t.volHistory : [1, 1.1], '#4B8BE8');
+
+  // Floating Market Pulse Chip
+  updateMarketPulseChip(viewState);
 }
 
+/**
+ * Initializes Global Search in the Search Modal.
+ */
 function setupGlobalSearch() {
-  const input = document.getElementById('global-search');
-  const resultsBox = document.getElementById('search-results');
+  const input = document.getElementById('global-search-input');
+  const resultsBox = document.getElementById('search-results-box');
   if (!input || !resultsBox) return;
 
   input.addEventListener('input', () => {
     const q = input.value.trim().toLowerCase();
     if (!q) {
-      resultsBox.style.display = 'none';
+      resultsBox.innerHTML = '<div style="padding:16px; color:var(--text-muted); text-align:center;">Type ticker, company name, sector, or lesson title...</div>';
       return;
     }
 
@@ -263,7 +323,11 @@ function setupGlobalSearch() {
           label: `${c.symbol} — ${c.companyName}`,
           sub: `${fmtPrice(c.price)} (${fmtPct(c.changePercent)})`,
           typeLabel: 'Company',
-          action: () => selectWorldObject('COMPANY', c.id, true)
+          action: () => {
+            closeAllPanels();
+            navigateTo('city');
+            selectWorldObject('COMPANY', c.id, true);
+          }
         });
       }
     });
@@ -274,7 +338,11 @@ function setupGlobalSearch() {
           label: s.name,
           sub: 'Sector District',
           typeLabel: 'Sector',
-          action: () => selectWorldObject('SECTOR', s.id, true)
+          action: () => {
+            closeAllPanels();
+            navigateTo('city');
+            selectWorldObject('SECTOR', s.id, true);
+          }
         });
       }
     });
@@ -285,7 +353,11 @@ function setupGlobalSearch() {
           label: f.name,
           sub: f.role,
           typeLabel: 'Infrastructure',
-          action: () => selectWorldObject('INFRA', f.id, true)
+          action: () => {
+            closeAllPanels();
+            navigateTo('city');
+            selectWorldObject('INFRA', f.id, true);
+          }
         });
       }
     });
@@ -294,249 +366,120 @@ function setupGlobalSearch() {
       if (les.title.toLowerCase().includes(q) || les.meaning.toLowerCase().includes(q)) {
         matches.push({
           label: les.title,
-          sub: 'Interactive Financial Lesson',
-          typeLabel: 'Concept',
-          action: () => openConceptModal(key)
+          sub: 'Financial Literacy Lesson',
+          typeLabel: 'Lesson',
+          action: () => {
+            closeAllPanels();
+            openConceptModal(key);
+          }
         });
       }
     });
 
     resultsBox.innerHTML = '';
     if (matches.length === 0) {
-      resultsBox.innerHTML = `<div style="padding:10px; color:var(--text-secondary);">No matching companies, sectors, or concepts found for "${input.value}".</div>`;
+      resultsBox.innerHTML = `<div style="padding:16px; color:var(--text-secondary); text-align:center;">No matching items found for "${input.value}".</div>`;
     } else {
-      matches.slice(0, 10).forEach(m => {
+      matches.slice(0, 8).forEach(m => {
         const row = document.createElement('div');
         row.className = 'search-item';
+        row.tabIndex = 0;
         row.innerHTML = `
           <div>
-            <div style="font-weight:600;">${m.label}</div>
-            <div style="font-size:11px; color:var(--text-secondary);">${m.sub}</div>
+            <div style="font-weight:600; font-size:var(--text-md);">${m.label}</div>
+            <div style="font-size:11.5px; color:var(--text-secondary);">${m.sub}</div>
           </div>
-          <span class="search-item-type">${m.typeLabel}</span>
+          <span class="badge sim" style="font-size:11px;">${m.typeLabel}</span>
         `;
         row.addEventListener('click', () => {
-          resultsBox.style.display = 'none';
           input.value = '';
           m.action();
+        });
+        row.addEventListener('keydown', e => {
+          if (e.key === 'Enter') m.action();
         });
         resultsBox.appendChild(row);
       });
     }
-    resultsBox.style.display = 'block';
   });
 
-  document.addEventListener('click', e => {
-    if (!input.contains(e.target) && !resultsBox.contains(e.target)) {
-      resultsBox.style.display = 'none';
-    }
-  });
-}
-
-function setupPopovers() {
-  const evBtn = document.getElementById('events-popover-btn');
-  const evMenu = document.getElementById('events-popover-menu');
-  const scBtn = document.getElementById('scene-popover-btn');
-  const scMenu = document.getElementById('scene-popover-menu');
-  const tlBtn = document.getElementById('tools-popover-btn');
-  const tlMenu = document.getElementById('tools-popover-menu');
-
-  if (evBtn && evMenu) {
-    evBtn.addEventListener('click', e => {
-      e.stopPropagation();
-      const open = evMenu.style.display === 'block';
-      if (scMenu) scMenu.style.display = 'none';
-      if (tlMenu) tlMenu.style.display = 'none';
-      if (!open) renderEventsPopoverList(store.getViewState());
-      evMenu.style.display = open ? 'none' : 'block';
-      evBtn.setAttribute('aria-expanded', String(!open));
-    });
-  }
-
-  if (scBtn && scMenu) {
-    scBtn.addEventListener('click', e => {
-      e.stopPropagation();
-      const open = scMenu.style.display === 'block';
-      if (evMenu) evMenu.style.display = 'none';
-      if (tlMenu) tlMenu.style.display = 'none';
-      scMenu.style.display = open ? 'none' : 'block';
-      scBtn.setAttribute('aria-expanded', String(!open));
-    });
-  }
-
-  if (tlBtn && tlMenu) {
-    tlBtn.addEventListener('click', e => {
-      e.stopPropagation();
-      const open = tlMenu.style.display === 'block';
-      if (evMenu) evMenu.style.display = 'none';
-      if (scMenu) scMenu.style.display = 'none';
-      tlMenu.style.display = open ? 'none' : 'block';
-      tlBtn.setAttribute('aria-expanded', String(!open));
-    });
-  }
-
-  document.addEventListener('click', e => {
-    if (evMenu && !evMenu.contains(e.target) && e.target !== evBtn) {
-      evMenu.style.display = 'none';
-    }
-    if (scMenu && !scMenu.contains(e.target) && e.target !== scBtn) {
-      scMenu.style.display = 'none';
-    }
-    if (tlMenu && !tlMenu.contains(e.target) && e.target !== tlBtn) {
-      tlMenu.style.display = 'none';
+  // Hotkey '/' to open search
+  window.addEventListener('keydown', e => {
+    if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+      e.preventDefault();
+      openPanel('search-modal-wrap');
+      setTimeout(() => input.focus(), 80);
     }
   });
 }
 
+/**
+ * Initializes all Top Bar, Simulation Sheet, Scene Sheet, and Menu Drawer events.
+ */
 export function initTopBarEvents() {
   setupGlobalSearch();
-  setupPopovers();
-  renderEventsPopoverList(store.getViewState());
+  renderEventsSheetList(store.getViewState());
 
-  document.getElementById('exchange-select').addEventListener('change', e => {
-    store.getLiveState().exchangeFilter = e.target.value;
-    update3DCityFromState(store.getViewState());
-    store.emit('filter');
+  // TOP BAR: 5 VISIBLE ITEMS
+  // 1. Logo
+  document.getElementById('topbar-logo')?.addEventListener('click', () => {
+    navigateTo('city');
+    applyCameraPreset('ENTIRE');
   });
 
-  document.getElementById('data-mode-select').addEventListener('change', e => {
-    const live = store.getLiveState();
-    live.dataMode = e.target.value;
-    recalculateAllFinancials(live);
-    update3DCityFromState(store.getViewState());
-    store.emit('settings');
-    store.emit('tick');
+  // 2. Search Button
+  document.getElementById('topbar-search-btn')?.addEventListener('click', () => {
+    openPanel('search-modal-wrap');
+    setTimeout(() => {
+      const inp = document.getElementById('global-search-input');
+      if (inp) inp.focus();
+    }, 80);
   });
 
-  document.getElementById('edu-mode-btn').addEventListener('click', () => {
-    applyWorkspacePreset(!store.getLiveState().beginnerMode);
+  // 3. Sim Clock Chip -> Opens Simulation Sheet
+  document.getElementById('topbar-sim-chip')?.addEventListener('click', () => {
+    openPanel('sheet-simulation');
   });
 
-  const soundBtn = document.getElementById('sound-top-btn');
-  if (soundBtn) {
-    soundBtn.addEventListener('click', () => {
-      const live = store.getLiveState();
-      live.soundEnabled = !live.soundEnabled;
-      soundBtn.innerHTML = live.soundEnabled ? '🔊 <span class="hide-tablet">Sound</span>' : '🔇 <span class="hide-tablet">Sound</span>';
-      soundBtn.classList.toggle('active', live.soundEnabled);
-      if (live.soundEnabled) playUiSound('select');
-      showToast(live.soundEnabled ? '🔊 Web Audio sound effects enabled.' : '🔇 Sound effects muted.');
-    });
-  }
-
-  const storyBtn = document.getElementById('story-top-btn');
-  if (storyBtn) storyBtn.addEventListener('click', startStoryMode);
-
-  const qaBtn = document.getElementById('qa-top-btn');
-  if (qaBtn) qaBtn.addEventListener('click', () => {
-    const tlMenu = document.getElementById('tools-popover-menu');
-    if (tlMenu) tlMenu.style.display = 'none';
-    openQATestModal();
+  // 4. Scene Button -> Opens Scene Sheet
+  document.getElementById('topbar-scene-btn')?.addEventListener('click', () => {
+    openPanel('sheet-scene');
   });
 
-  document.getElementById('alerts-top-btn').addEventListener('click', openAlertsModal);
-  document.getElementById('settings-top-btn').addEventListener('click', openSettingsModal);
-
-  const tourBtn = document.getElementById('tour-top-btn');
-  if (tourBtn) tourBtn.addEventListener('click', () => {
-    const tlMenu = document.getElementById('tools-popover-menu');
-    if (tlMenu) tlMenu.style.display = 'none';
-    startOnboardingTour();
+  // 5. Menu Button -> Opens Main Menu Drawer
+  document.getElementById('topbar-menu-btn')?.addEventListener('click', () => {
+    openPanel('drawer-menu');
   });
 
-  const shotBtn = document.getElementById('screenshot-top-btn');
-  if (shotBtn) shotBtn.addEventListener('click', () => {
-    const tlMenu = document.getElementById('tools-popover-menu');
-    if (tlMenu) tlMenu.style.display = 'none';
-    exportWatermarkedScreenshot();
-  });
-
-  const kbBtn = document.getElementById('shortcuts-top-btn');
-  if (kbBtn) kbBtn.addEventListener('click', () => {
-    const tlMenu = document.getElementById('tools-popover-menu');
-    if (tlMenu) tlMenu.style.display = 'none';
-    openShortcutsModal();
-  });
-
-  const creditsBtn = document.getElementById('credits-top-btn');
-  if (creditsBtn) creditsBtn.addEventListener('click', () => {
-    const tlMenu = document.getElementById('tools-popover-menu');
-    if (tlMenu) tlMenu.style.display = 'none';
-    openCreditsModal();
-  });
-
-  // Footer Navigation Legal & Credit Links
-  document.getElementById('footer-credits-link')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    openCreditsModal();
-  });
-  document.getElementById('footer-privacy-link')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    openPrivacyModal();
-  });
-  document.getElementById('footer-terms-link')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    openTermsModal();
-  });
-
-  const sceneThemeBtn = document.getElementById('scene-theme-toggle-btn');
-  if (sceneThemeBtn) {
-    sceneThemeBtn.addEventListener('click', () => {
-      document.body.classList.toggle('light-ui');
-      store.getLiveState().lightUiTheme = document.body.classList.contains('light-ui');
-      store.emit('settings');
-    });
-  }
-
-  document.getElementById('toggle-left-btn').addEventListener('click', () => {
-    if (document.body.classList.contains('left-icon-only')) {
-      document.body.classList.remove('left-icon-only');
-    } else {
-      document.body.classList.add('left-icon-only');
-    }
-  });
-
-  document.getElementById('toggle-right-btn').addEventListener('click', () => {
-    document.body.classList.toggle('right-collapsed');
-  });
-
-  document.getElementById('fullscreen-city-btn').addEventListener('click', () => {
-    const allHidden =
-      document.body.classList.contains('left-collapsed') &&
-      document.body.classList.contains('right-collapsed') &&
-      document.body.classList.contains('bottom-collapsed');
-    document.body.classList.toggle('left-collapsed', !allHidden);
-    document.body.classList.toggle('right-collapsed', !allHidden);
-    document.body.classList.toggle('bottom-collapsed', !allHidden);
-  });
-  document.getElementById('reset-cam-btn').addEventListener('click', () => applyCameraPreset('ENTIRE'));
-  document.getElementById('deselect-btn').addEventListener('click', clearSelection);
-
-  document.querySelectorAll('.summary-card').forEach(card => {
-    card.addEventListener('click', e => {
-      if (e.target.classList.contains('help-icon')) return;
-      const type = card.dataset.summaryCard;
-      if (type === 'NIFTY' || type === 'SENSEX') switchLeftNavView('indices');
-      else if (type === 'MCAP' || type === 'VOL') switchLeftNavView('overview');
-    });
-  });
-
-  document.querySelectorAll('.help-icon[data-concept]').forEach(btn => {
-    btn.addEventListener('click', e => {
+  // MARKET PULSE CHIP (Floating in 3D scene)
+  const pulseChip = document.getElementById('market-pulse-chip');
+  const pulsePopover = document.getElementById('market-pulse-popover');
+  if (pulseChip && pulsePopover) {
+    pulseChip.addEventListener('click', e => {
       e.stopPropagation();
-      openConceptModal(btn.dataset.concept);
+      const isVisible = pulsePopover.style.display === 'block';
+      pulsePopover.style.display = isVisible ? 'none' : 'block';
+      if (!isVisible) updateMarketPulseChip(store.getViewState());
     });
-  });
+    document.addEventListener('click', e => {
+      if (!pulsePopover.contains(e.target) && !pulseChip.contains(e.target)) {
+        pulsePopover.style.display = 'none';
+      }
+    });
+  }
 
-  const playPauseBtn = document.getElementById('sim-play-pause-btn');
-  playPauseBtn.addEventListener('click', () => {
-    const live = store.getLiveState();
-    live.simRunning = !live.simRunning;
-    returnToLiveReplay();
-    playPauseBtn.textContent = live.simRunning ? '⏸ Pause' : '▶ Resume';
-    update3DCityFromState(store.getViewState());
-    updateTopBarAndSummaryCards(store.getViewState());
-  });
+  // SIMULATION SHEET CONTROLS
+  const sheetPlayBtn = document.getElementById('sheet-sim-play-btn');
+  if (sheetPlayBtn) {
+    sheetPlayBtn.addEventListener('click', () => {
+      const live = store.getLiveState();
+      live.simRunning = !live.simRunning;
+      returnToLiveReplay();
+      sheetPlayBtn.textContent = live.simRunning ? '⏸ Pause Sim' : '▶ Resume Sim';
+      update3DCityFromState(store.getViewState());
+      updateTopBarAndSummaryCards(store.getViewState());
+    });
+  }
 
   document.querySelectorAll('.sim-speed-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -545,32 +488,205 @@ export function initTopBarEvents() {
     });
   });
 
-  document.getElementById('sim-step-btn').addEventListener('click', () => {
+  document.getElementById('sheet-sim-step-btn')?.addEventListener('click', () => {
     returnToLiveReplay();
     stepMarketSimulation();
     update3DCityFromState(store.getViewState());
   });
 
-  document.getElementById('sim-reset-btn').addEventListener('click', () => {
+  document.getElementById('sheet-sim-reset-btn')?.addEventListener('click', () => {
     resetFullSimulation();
     update3DCityFromState(store.getViewState());
-    showToast('Simulation reset to initial deterministic seed state.');
+    showToast('Simulation reset to initial state.');
   });
 
-  document.getElementById('replay-slider').addEventListener('input', e => {
+  document.getElementById('sheet-replay-slider')?.addEventListener('input', e => {
     const idx = parseInt(e.target.value, 10);
     setReplayIndex(idx);
     update3DCityFromState(store.getViewState());
   });
 
-  document.getElementById('replay-live-btn').addEventListener('click', () => {
+  document.getElementById('sheet-replay-live-btn')?.addEventListener('click', () => {
     returnToLiveReplay();
     update3DCityFromState(store.getViewState());
   });
 
-  document.getElementById('end-event-btn').addEventListener('click', () => {
+  document.getElementById('sheet-end-event-btn')?.addEventListener('click', () => {
     endActiveEvent();
     update3DCityFromState(store.getViewState());
-    showToast('Active event ended without resetting simulation.');
+    renderEventsSheetList(store.getViewState());
+    showToast('Active event ended.');
+  });
+
+  document.getElementById('sheet-story-btn')?.addEventListener('click', () => {
+    closePanel('sheet-simulation');
+    startStoryMode();
+  });
+
+  document.getElementById('data-mode-select')?.addEventListener('change', e => {
+    const live = store.getLiveState();
+    live.dataMode = e.target.value;
+    recalculateAllFinancials(live);
+    update3DCityFromState(store.getViewState());
+    store.emit('settings');
+    store.emit('tick');
+  });
+
+  // SCENE SHEET CONTROLS
+  document.getElementById('day-night-btn')?.addEventListener('click', e => {
+    const live = store.getLiveState();
+    live.autoDayNight = false;
+    const autoBtn = document.getElementById('auto-cycle-btn');
+    if (autoBtn) autoBtn.classList.remove('active');
+    live.isNight = !live.isNight;
+    e.target.textContent = live.isNight ? '🌙 Night' : '☀️ Day';
+    applyWeatherAndLighting(store.getViewState());
+  });
+
+  const autoCycleBtn = document.getElementById('auto-cycle-btn');
+  if (autoCycleBtn) {
+    autoCycleBtn.addEventListener('click', () => {
+      const live = store.getLiveState();
+      live.autoDayNight = !live.autoDayNight;
+      autoCycleBtn.classList.toggle('active', live.autoDayNight);
+      showToast(live.autoDayNight ? 'Automatic Day/Night cycle enabled.' : 'Auto solar cycle paused.');
+    });
+  }
+
+  document.getElementById('labels-toggle-btn')?.addEventListener('click', e => {
+    const live = store.getLiveState();
+    live.labelsVisible = !live.labelsVisible;
+    e.target.classList.toggle('active', live.labelsVisible);
+    update3DCityFromState(store.getViewState());
+  });
+
+  const atmoOverrideBtn = document.getElementById('atmo-override-btn');
+  if (atmoOverrideBtn) {
+    atmoOverrideBtn.addEventListener('click', () => {
+      const live = store.getLiveState();
+      live.atmosphereOverride = !live.atmosphereOverride;
+      atmoOverrideBtn.classList.toggle('active', !live.atmosphereOverride);
+      atmoOverrideBtn.textContent = live.atmosphereOverride ? '🌤️ Neutral Sky' : '🌤️ Mood Sky';
+      showToast(live.atmosphereOverride ? 'Market mood sky overridden.' : 'Market mood atmosphere enabled.');
+    });
+  }
+
+  const heatmapBtn = document.getElementById('heatmap-toggle-btn');
+  if (heatmapBtn) {
+    heatmapBtn.addEventListener('click', () => {
+      const live = store.getLiveState();
+      live.heatmapMode = !live.heatmapMode;
+      heatmapBtn.classList.toggle('active', live.heatmapMode);
+      heatmapBtn.textContent = live.heatmapMode ? '🔥 Sector Heatmap: On' : '🔥 Sector Heatmap: Off';
+      update3DCityFromState(store.getViewState());
+      showToast(live.heatmapMode ? 'Sector Heatmap enabled on district plazas.' : 'Sector Heatmap disabled.');
+    });
+  }
+
+  document.getElementById('weather-select')?.addEventListener('change', e => {
+    const live = store.getLiveState();
+    live.weather = e.target.value;
+    if (live.weather === 'NIGHT' || live.weather === 'EVENING') {
+      live.autoDayNight = false;
+      if (autoCycleBtn) autoCycleBtn.classList.remove('active');
+    }
+    applyWeatherAndLighting(store.getViewState());
+  });
+
+  document.getElementById('quality-select')?.addEventListener('change', e => {
+    const choice = e.target.value;
+    syncQualitySettings(choice);
+    showToast(`Graphics quality set to ${choice}.`);
+  });
+
+  document.getElementById('scene-theme-toggle-btn')?.addEventListener('click', () => {
+    document.body.classList.toggle('light-ui');
+    store.getLiveState().lightUiTheme = document.body.classList.contains('light-ui');
+    store.emit('settings');
+  });
+
+  // MENU DRAWER UTILITIES
+  document.querySelectorAll('[data-menu-route]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      closeAllPanels();
+      navigateTo(btn.dataset.menuRoute);
+    });
+  });
+
+  document.getElementById('menu-tour-btn')?.addEventListener('click', () => {
+    closeAllPanels();
+    startOnboardingTour();
+  });
+
+  document.getElementById('menu-replay-intro-btn')?.addEventListener('click', () => {
+    closeAllPanels();
+    replayIntro();
+  });
+
+  document.getElementById('menu-story-btn')?.addEventListener('click', () => {
+    closeAllPanels();
+    startStoryMode();
+  });
+
+  document.getElementById('menu-edu-mode-btn')?.addEventListener('click', () => {
+    applyWorkspacePreset(!store.getLiveState().beginnerMode);
+  });
+
+  document.getElementById('menu-sound-btn')?.addEventListener('click', () => {
+    const live = store.getLiveState();
+    live.soundEnabled = !live.soundEnabled;
+    const btn = document.getElementById('menu-sound-btn');
+    if (btn) btn.innerHTML = live.soundEnabled ? '🔊 Sound: On' : '🔇 Sound: Muted';
+    if (live.soundEnabled) playUiSound('select');
+    showToast(live.soundEnabled ? 'Sound effects enabled.' : 'Sound effects muted.');
+  });
+
+  document.getElementById('menu-screenshot-btn')?.addEventListener('click', () => {
+    closeAllPanels();
+    exportWatermarkedScreenshot();
+  });
+
+  document.getElementById('menu-shortcuts-btn')?.addEventListener('click', () => {
+    closeAllPanels();
+    openShortcutsModal();
+  });
+
+  document.getElementById('menu-qa-btn')?.addEventListener('click', () => {
+    closeAllPanels();
+    openQATestModal();
+  });
+
+  document.getElementById('menu-credits-btn')?.addEventListener('click', () => {
+    closeAllPanels();
+    openCreditsModal();
+  });
+
+  document.getElementById('menu-privacy-btn')?.addEventListener('click', () => {
+    closeAllPanels();
+    openPrivacyModal();
+  });
+
+  document.getElementById('menu-terms-btn')?.addEventListener('click', () => {
+    closeAllPanels();
+    openTermsModal();
+  });
+
+  document.getElementById('menu-disclaimer-btn')?.addEventListener('click', () => {
+    closeAllPanels();
+    openConceptModal('disclaimer');
+  });
+
+  // VIEWPORT TOGGLE CONTROLS (Floating in 3D City)
+  document.getElementById('fullscreen-city-btn')?.addEventListener('click', () => {
+    closeAllPanels();
+  });
+
+  document.getElementById('reset-cam-btn')?.addEventListener('click', () => {
+    applyCameraPreset('ENTIRE');
+  });
+
+  document.getElementById('deselect-btn')?.addEventListener('click', () => {
+    clearSelection();
+    closePanel('right-panel');
   });
 }

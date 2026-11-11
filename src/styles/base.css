@@ -85,7 +85,7 @@ select, input[type="text"], input[type="number"] {
 .neu-text { color: var(--neu) !important; }
 
 @media (max-width: 768px) {
-  button, select, input[type="text"], input[type="number"] {
-    min-height: 40px;
+  button, select, input[type="text"], input[type="number"], .topbar-btn, .mob-nav-btn {
+    min-height: 44px;
   }
 }

@@ -108,6 +108,10 @@ export function openTermsModal() {
 }
 
 export function openConceptModal(conceptKey) {
+  if (conceptKey === 'disclaimer') {
+    openTermsModal();
+    return;
+  }
   const les = FINANCIAL_LESSONS[conceptKey];
   if (!les) return;
   document.getElementById('modal-title').textContent = `Understand This: ${les.title}`;

@@ -1,10 +1,10 @@
 /**
- * Dynamic Count Labels, Loading Screen, 4-Step Onboarding Tour,
+ * Dynamic Count Labels, Loading Screen, 5-Step Guided Onboarding Tour with Spotlight Overlay,
  * 60-Second Guided "Story Mode", Web Audio Synthesizer (Off by Default),
  * and Watermarked City Screenshot Exporter.
  */
 import { getDatasetCounts } from '../engine/indices.js';
-import { startCinematicFlyIn, skipCinematicFlyIn, applyCameraPreset, camRig } from '../controls/cameraRig.js';
+import { applyCameraPreset, camRig } from '../controls/cameraRig.js';
 import { selectWorldObject, clearSelection } from '../controls/picking.js';
 import { applyEconomicEvent, endActiveEvent } from '../engine/simulation.js';
 import { applyWeatherAndLighting } from '../world/weather.js';
@@ -12,6 +12,8 @@ import { update3DCityFromState } from '../world/buildings.js';
 import { store } from '../state/store.js';
 import { renderFrame } from '../world/postfx.js';
 import { showToast } from './toasts.js';
+import { openPanel, closeAllPanels } from './panels.js';
+import { hasSeenIntro, startIntroSequence, initIntroControls } from './intro.js';
 
 let audioCtx = null;
 
@@ -58,33 +60,62 @@ export function playUiSound(type = 'select') {
   } catch (e) {}
 }
 
-const TOUR_STEPS = [
+export const TOUR_STEPS = [
   {
-    title: '1. Building = Listed Company',
-    desc: 'Every tower in MarketVerse represents one listed Indian company. Click any building to inspect its live price, share count, and financial fundamentals.',
-    action: () => selectWorldObject('COMPANY', 'C06', true, false)
-  },
-  {
-    title: '2. Height = Market Capitalization',
-    desc: 'Building height encodes Market Cap (Share Price × Outstanding Shares). Remember: a taller tower reflects larger equity scale, never superior investment quality.',
-    action: () => selectWorldObject('COMPANY', 'C11', true, false)
-  },
-  {
-    title: '3. Roof Beacon = Daily Change (%)',
-    desc: 'The glowing roof crown and directional ticker badge (▲ / ▼ / •) show percentage movement vs. previous close, while window light density reflects relative trading volume.',
-    action: () => selectWorldObject('COMPANY', 'C01', true, false)
-  },
-  {
-    title: '4. District = Economic Sector',
-    desc: 'Companies are grouped into 10 color-coded Sector Districts around the Central Stock Exchange. Toggle "🔥 Sector Heatmap" in Scene settings to see cap-weighted sector performance.',
+    stepNum: 1,
+    title: '1. A Building = A Company',
+    desc: 'Every skyscraper in MarketVerse represents one listed Indian company. Click any building to inspect its live price, share count, and financial fundamentals.',
+    targetHighlight: 'canvas',
     action: () => {
+      closeAllPanels();
+      selectWorldObject('COMPANY', 'C06', true, false);
+    }
+  },
+  {
+    stepNum: 2,
+    title: '2. Height = Market Cap, Not Quality',
+    desc: 'Tower height represents Market Capitalization (Share Price × Outstanding Shares). Remember: a taller tower reflects larger equity scale, never superior investment quality.',
+    targetHighlight: 'canvas',
+    action: () => {
+      closeAllPanels();
+      selectWorldObject('COMPANY', 'C11', true, false);
+    }
+  },
+  {
+    stepNum: 3,
+    title: '3. Beacon Color + Arrow = Daily Change',
+    desc: 'The glowing rooftop crown and directional badge (▲ / ▼ / •) show % change vs. previous close. Window light density reflects relative trading volume.',
+    targetHighlight: 'canvas',
+    action: () => {
+      closeAllPanels();
+      selectWorldObject('COMPANY', 'C01', true, false);
+    }
+  },
+  {
+    stepNum: 4,
+    title: '4. A District = A Sector',
+    desc: 'Companies are grouped into 10 color-coded Sector Districts around the Central Exchange. Watch how economic shocks ripple through interrelated sectors.',
+    targetHighlight: 'canvas',
+    action: () => {
+      closeAllPanels();
       clearSelection();
       applyCameraPreset('ENTIRE');
+    }
+  },
+  {
+    stepNum: 5,
+    title: '5. Open Simulation Sheet & Try an Event',
+    desc: 'Tap the Sim Clock or Simulation Sheet to test macroeconomic events like interest rate changes or crude oil surges, adjust speed, and scrub the replay timeline.',
+    targetHighlight: 'sheet-simulation',
+    action: () => {
+      clearSelection();
+      openPanel('sheet-simulation');
     }
   }
 ];
 
 let currentTourStep = 0;
+let isTourActive = false;
 
 // 60-Second Story Mode Chapters
 const STORY_CHAPTERS = [
@@ -150,8 +181,7 @@ let lastChapterIdx = -1;
 
 export function startStoryMode() {
   stopStoryMode(false);
-  const card = document.getElementById('onboarding-card');
-  if (card) card.style.display = 'none';
+  stopOnboardingTour();
 
   const banner = document.getElementById('story-banner');
   if (banner) banner.style.display = 'block';
@@ -177,15 +207,19 @@ export function startStoryMode() {
     if (chapIdx !== lastChapterIdx) {
       lastChapterIdx = chapIdx;
       const chap = STORY_CHAPTERS[chapIdx];
-      document.getElementById('story-chapter-title').textContent = `🎬 ${chap.title}`;
-      document.getElementById('story-chapter-desc').textContent = chap.desc;
+      const titleEl = document.getElementById('story-chapter-title');
+      const descEl = document.getElementById('story-chapter-desc');
+      if (titleEl) titleEl.textContent = `🎬 ${chap.title}`;
+      if (descEl) descEl.textContent = chap.desc;
       playUiSound('select');
       chap.onEnter();
     }
 
     const rem = Math.max(0, 60 - storyElapsedSec);
-    document.getElementById('story-timer-badge').textContent = `${rem}s left`;
-    document.getElementById('story-progress-fill').style.width = `${(storyElapsedSec / 60) * 100}%`;
+    const timerBadge = document.getElementById('story-timer-badge');
+    const fillEl = document.getElementById('story-progress-fill');
+    if (timerBadge) timerBadge.textContent = `${rem}s left`;
+    if (fillEl) fillEl.style.width = `${(storyElapsedSec / 60) * 100}%`;
 
     storyElapsedSec++;
   };
@@ -240,36 +274,31 @@ export function finishLoadingAndStartIntro() {
   setLoadingProgress(100, 'City Ready!');
   const screen = document.getElementById('loading-screen');
 
-  let hasVisited = false;
-  try {
-    hasVisited = localStorage.getItem('mv_visited_v1') === 'true';
-    localStorage.setItem('mv_visited_v1', 'true');
-  } catch (e) {}
-
   setTimeout(() => {
     if (screen) {
       screen.style.opacity = '0';
       setTimeout(() => {
         screen.style.display = 'none';
-      }, 380);
+      }, 350);
     }
 
-    if (!hasVisited) {
-      startCinematicFlyIn(() => {
+    initIntroControls(() => {
+      // Intro complete or skipped
+      if (!hasSeenIntro()) {
+        startOnboardingTour();
+      } else {
+        applyCameraPreset('ENTIRE');
+      }
+    });
+
+    if (!hasSeenIntro()) {
+      startIntroSequence(() => {
         startOnboardingTour();
       });
     } else {
       applyCameraPreset('ENTIRE');
     }
-  }, 220);
-
-  const skipBtn = document.getElementById('skip-flyin-btn');
-  if (skipBtn) {
-    skipBtn.addEventListener('click', () => {
-      skipCinematicFlyIn();
-      startOnboardingTour();
-    });
-  }
+  }, 200);
 
   const stopStoryBtn = document.getElementById('stop-story-btn');
   if (stopStoryBtn) {
@@ -281,43 +310,74 @@ export function finishLoadingAndStartIntro() {
 
 function renderTourStep() {
   const card = document.getElementById('onboarding-card');
+  const spotlight = document.getElementById('tour-spotlight-overlay');
   if (!card) return;
+
   const step = TOUR_STEPS[currentTourStep];
   if (!step) return;
 
-  document.getElementById('onboarding-step-badge').textContent = `Step ${currentTourStep + 1} of ${TOUR_STEPS.length}`;
-  document.getElementById('onboarding-title').textContent = step.title;
-  document.getElementById('onboarding-desc').textContent = step.desc;
+  const badge = document.getElementById('onboarding-step-badge');
+  const title = document.getElementById('onboarding-title');
+  const desc = document.getElementById('onboarding-desc');
+  if (badge) badge.textContent = `Step ${currentTourStep + 1} of ${TOUR_STEPS.length}`;
+  if (title) title.textContent = step.title;
+  if (desc) desc.textContent = step.desc;
 
   const prevBtn = document.getElementById('onboarding-prev-btn');
   const nextBtn = document.getElementById('onboarding-next-btn');
   if (prevBtn) prevBtn.disabled = currentTourStep === 0;
-  if (nextBtn) nextBtn.textContent = currentTourStep === TOUR_STEPS.length - 1 ? 'Finish ✓' : 'Next →';
+  if (nextBtn) nextBtn.textContent = currentTourStep === TOUR_STEPS.length - 1 ? 'Finish Tour ✓' : 'Next Step →';
+
+  if (spotlight) {
+    spotlight.classList.add('visible');
+    spotlight.dataset.step = String(currentTourStep + 1);
+  }
 
   step.action();
 }
 
 export function startOnboardingTour() {
   stopStoryMode(false);
+  isTourActive = true;
   currentTourStep = 0;
+
   const card = document.getElementById('onboarding-card');
+  const spotlight = document.getElementById('tour-spotlight-overlay');
+
+  if (spotlight) {
+    spotlight.style.display = 'block';
+    requestAnimationFrame(() => spotlight.classList.add('visible'));
+  }
+
   if (card) {
     card.style.display = 'block';
     renderTourStep();
   }
 }
 
-function initOnboardingControls() {
+export function stopOnboardingTour() {
+  isTourActive = false;
   const card = document.getElementById('onboarding-card');
+  const spotlight = document.getElementById('tour-spotlight-overlay');
+
+  if (card) card.style.display = 'none';
+  if (spotlight) {
+    spotlight.classList.remove('visible');
+    spotlight.style.display = 'none';
+  }
+}
+
+function initOnboardingControls() {
   const closeBtn = document.getElementById('onboarding-close-btn');
   const prevBtn = document.getElementById('onboarding-prev-btn');
   const nextBtn = document.getElementById('onboarding-next-btn');
 
   if (closeBtn) {
     closeBtn.addEventListener('click', () => {
-      if (card) card.style.display = 'none';
+      stopOnboardingTour();
     });
   }
+
   if (prevBtn) {
     prevBtn.addEventListener('click', () => {
       if (currentTourStep > 0) {
@@ -326,17 +386,41 @@ function initOnboardingControls() {
       }
     });
   }
+
   if (nextBtn) {
     nextBtn.addEventListener('click', () => {
       if (currentTourStep < TOUR_STEPS.length - 1) {
         currentTourStep++;
         renderTourStep();
-      } else if (card) {
-        card.style.display = 'none';
-        showToast('Tour complete! Click any building or press ? for keyboard shortcuts.');
+      } else {
+        stopOnboardingTour();
+        showToast('🎓 Tour complete! Explore the city or switch screens anytime.');
       }
     });
   }
+
+  // Keyboard navigation for tour accessibility
+  window.addEventListener('keydown', e => {
+    if (!isTourActive) return;
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      if (currentTourStep < TOUR_STEPS.length - 1) {
+        currentTourStep++;
+        renderTourStep();
+      } else {
+        stopOnboardingTour();
+      }
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      if (currentTourStep > 0) {
+        currentTourStep--;
+        renderTourStep();
+      }
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      stopOnboardingTour();
+    }
+  });
 }
 
 export function exportWatermarkedScreenshot() {
