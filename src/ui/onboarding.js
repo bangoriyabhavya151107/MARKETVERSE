@@ -282,16 +282,17 @@ export function finishLoadingAndStartIntro() {
       }, 350);
     }
 
+    const firstVisit = !hasSeenIntro();
+
     initIntroControls(() => {
-      // Intro complete or skipped
-      if (!hasSeenIntro()) {
+      if (firstVisit) {
         startOnboardingTour();
       } else {
         applyCameraPreset('ENTIRE');
       }
     });
 
-    if (!hasSeenIntro()) {
+    if (firstVisit) {
       startIntroSequence(() => {
         startOnboardingTour();
       });

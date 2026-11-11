@@ -345,7 +345,7 @@ export function openSettingsModal() {
     </div>
   `;
 
-  body.querySelector('#modal-quality-select').addEventListener('change', e => {
+  body.querySelector('#modal-quality-select')?.addEventListener('change', e => {
     const val = e.target.value;
     syncQualitySettings(val);
     const navSel = document.getElementById('quality-select');
@@ -353,17 +353,17 @@ export function openSettingsModal() {
     openSettingsModal();
   });
 
-  body.querySelector('#modal-postfx-checkbox').addEventListener('change', e => {
+  body.querySelector('#modal-postfx-checkbox')?.addEventListener('change', e => {
     store.getLiveState().postFxEnabled = e.target.checked;
     syncQualitySettings(store.getLiveState().graphicsQuality);
   });
 
-  body.querySelector('#modal-dof-checkbox').addEventListener('change', e => {
+  body.querySelector('#modal-dof-checkbox')?.addEventListener('change', e => {
     store.getLiveState().dofEnabled = e.target.checked;
     syncQualitySettings(store.getLiveState().graphicsQuality);
   });
 
-  body.querySelector('#modal-sound-checkbox').addEventListener('change', e => {
+  body.querySelector('#modal-sound-checkbox')?.addEventListener('change', e => {
     const live = store.getLiveState();
     live.soundEnabled = e.target.checked;
     const sBtn = document.getElementById('sound-top-btn');
@@ -373,7 +373,7 @@ export function openSettingsModal() {
     }
   });
 
-  body.querySelector('#modal-heatmap-checkbox').addEventListener('change', e => {
+  body.querySelector('#modal-heatmap-checkbox')?.addEventListener('change', e => {
     const live = store.getLiveState();
     live.heatmapMode = e.target.checked;
     const navBtn = document.getElementById('heatmap-toggle-btn');
@@ -384,13 +384,13 @@ export function openSettingsModal() {
     update3DCityFromState(store.getViewState());
   });
 
-  body.querySelector('#toggle-theme-modal-btn').addEventListener('click', () => {
+  body.querySelector('#toggle-theme-modal-btn')?.addEventListener('click', () => {
     document.body.classList.toggle('light-ui');
     store.getLiveState().lightUiTheme = document.body.classList.contains('light-ui');
     store.emit('settings');
   });
 
-  body.querySelector('#reduced-motion-checkbox').addEventListener('change', e => {
+  body.querySelector('#reduced-motion-checkbox')?.addEventListener('change', e => {
     store.getLiveState().reducedMotion = e.target.checked;
     store.emit('settings');
   });
@@ -407,7 +407,7 @@ export function openSettingsModal() {
   body.querySelector('#modal-open-privacy-btn')?.addEventListener('click', openPrivacyModal);
   body.querySelector('#modal-open-terms-btn')?.addEventListener('click', openTermsModal);
 
-  body.querySelector('#modal-run-qa-btn').addEventListener('click', openQATestModal);
+  body.querySelector('#modal-run-qa-btn')?.addEventListener('click', openQATestModal);
 
   document.getElementById('modal-backdrop').style.display = 'flex';
 }

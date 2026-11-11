@@ -292,14 +292,14 @@ export function mountBottomPanel(viewState = store.getViewState()) {
       </table>
     `;
 
-    container.querySelector('#btab-end-event-btn').addEventListener('click', () => {
+    container.querySelector('#btab-end-event-btn')?.addEventListener('click', () => {
       endActiveEvent();
       update3DCityFromState(store.getViewState());
       renderEventsPopoverList(store.getViewState());
       showToast('Active event ended without resetting simulation.');
     });
 
-    container.querySelector('#btab-reset-sim-btn').addEventListener('click', () => {
+    container.querySelector('#btab-reset-sim-btn')?.addEventListener('click', () => {
       resetFullSimulation();
       update3DCityFromState(store.getViewState());
       renderEventsPopoverList(store.getViewState());
@@ -346,12 +346,12 @@ export function initBottomPanelEvents() {
     });
   });
 
-  document.getElementById('table-filter-input').addEventListener('input', e => {
+  document.getElementById('table-filter-input')?.addEventListener('input', e => {
     store.getLiveState().tableFilter = e.target.value;
     store.emit('filter');
   });
 
-  document.getElementById('toggle-bottom-btn').addEventListener('click', () => {
+  document.getElementById('toggle-bottom-btn')?.addEventListener('click', () => {
     document.body.classList.toggle('bottom-collapsed');
   });
 }

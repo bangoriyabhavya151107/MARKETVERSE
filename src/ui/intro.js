@@ -10,7 +10,6 @@
  */
 import gsap from 'gsap';
 import { startCinematicFlyIn, skipCinematicFlyIn, applyCameraPreset } from '../controls/cameraRig.js';
-import { startOnboardingTour } from './onboarding.js';
 
 const INTRO_STORAGE_KEY = 'marketverse_intro_seen';
 
@@ -45,7 +44,7 @@ function prefersReducedMotion() {
 }
 
 /**
- * Starts the 8-second cinematic intro sequence.
+ * Starts the ~8-second cinematic intro sequence.
  */
 export function startIntroSequence(onComplete) {
   const introEl = document.getElementById('intro-screen');
@@ -67,6 +66,7 @@ export function startIntroSequence(onComplete) {
   isIntroActive = true;
   introEl.style.display = 'flex';
   introEl.style.opacity = '1';
+  introEl.style.pointerEvents = 'auto';
 
   // Grab elements to animate
   const logoPath = document.getElementById('intro-logo-path');
@@ -88,81 +88,98 @@ export function startIntroSequence(onComplete) {
   });
 
   // Setup initial states
-  gsap.set(logoText, { opacity: 0, y: 10 });
-  gsap.set(candlePath, { strokeDashoffset: 1000, strokeDasharray: 1000 });
-  gsap.set(logoPath, { strokeDashoffset: 600, strokeDasharray: 600 });
-  gsap.set(skylineBars, { scaleY: 0, transformOrigin: 'bottom center' });
-  gsap.set(tickerWrap, { opacity: 0, y: 15 });
-  gsap.set([taglineEl, subtaglineEl], { opacity: 0, y: 20 });
+  if (logoText) gsap.set(logoText, { opacity: 0, y: 10 });
+  if (candlePath) gsap.set(candlePath, { strokeDashoffset: 1000, strokeDasharray: 1000 });
+  if (logoPath) gsap.set(logoPath, { strokeDashoffset: 600, strokeDasharray: 600 });
+  if (skylineBars.length) gsap.set(skylineBars, { scaleY: 0, transformOrigin: '50% 100%' });
+  if (tickerWrap) gsap.set(tickerWrap, { opacity: 0, y: 15 });
+  if (taglineEl) gsap.set(taglineEl, { opacity: 0, y: 20 });
+  if (subtaglineEl) gsap.set(subtaglineEl, { opacity: 0, y: 20 });
 
   // SCENE 1 (0-2s): Dark screen, logo stroke draw-on + Candlestick line draws across
-  introTimeline
-    .to(logoPath, {
+  if (logoPath) {
+    introTimeline.to(logoPath, {
       strokeDashoffset: 0,
       duration: 1.4,
       ease: 'power2.out'
-    }, 0.1)
-    .to(logoText, {
+    }, 0.1);
+  }
+  if (logoText) {
+    introTimeline.to(logoText, {
       opacity: 1,
       y: 0,
       duration: 0.8,
       ease: 'power2.out'
-    }, 0.7)
-    .to(candlePath, {
+    }, 0.7);
+  }
+  if (candlePath) {
+    introTimeline.to(candlePath, {
       strokeDashoffset: 0,
       duration: 1.5,
       ease: 'power1.inOut'
     }, 0.4);
+  }
 
   // SCENE 2 (2-4s): Line morphs to skyline silhouette; buildings rise in staggered wave, ticker scrolls
-  introTimeline
-    .to(skylineBars, {
+  if (skylineBars.length) {
+    introTimeline.to(skylineBars, {
       scaleY: 1,
       duration: 1.2,
       stagger: 0.04,
       ease: 'back.out(1.2)'
-    }, 2.0)
-    .to(tickerWrap, {
+    }, 2.0);
+  }
+  if (tickerWrap) {
+    introTimeline.to(tickerWrap, {
       opacity: 1,
       y: 0,
       duration: 0.6,
       ease: 'power2.out'
-    }, 2.4)
-    .to('.intro-ticker-inner', {
-      xPercent: -50,
-      duration: 6.0,
+    }, 2.3);
+    introTimeline.to('.intro-ticker-inner', {
+      xPercent: -40,
+      duration: 5.5,
       ease: 'none'
-    }, 2.4);
+    }, 2.3);
+  }
 
   // SCENE 3 (4-6s): Tagline reveals; then cross-fade intro into 3D city scene
-  introTimeline
-    .to(taglineEl, {
+  if (taglineEl) {
+    introTimeline.to(taglineEl, {
       opacity: 1,
       y: 0,
       duration: 0.9,
       ease: 'power2.out'
-    }, 3.8)
-    .to(subtaglineEl, {
+    }, 3.8);
+  }
+  if (subtaglineEl) {
+    introTimeline.to(subtaglineEl, {
       opacity: 1,
       y: 0,
       duration: 0.8,
       ease: 'power2.out'
-    }, 4.2)
-    .to(introEl, {
-      opacity: 0,
-      duration: 1.2,
-      ease: 'power1.inOut',
-      onComplete: () => {
-        introEl.style.display = 'none';
-      }
-    }, 5.2);
+    }, 4.2);
+  }
+
+  introTimeline.to(introEl, {
+    opacity: 0,
+    duration: 1.2,
+    ease: 'power1.inOut',
+    onComplete: () => {
+      introEl.style.display = 'none';
+      introEl.style.pointerEvents = 'none';
+    }
+  }, 5.0);
 
   // SCENE 4 (6-8s): 3D camera flies in from high above to Entire Market view
   introTimeline.add(() => {
     startCinematicFlyIn(() => {
       // Finished fly in
     });
-  }, 5.6);
+  }, 5.4);
+
+  // Pad timeline to 7.8s
+  introTimeline.to({}, { duration: 2.4 }, 5.4);
 }
 
 /**
@@ -173,8 +190,11 @@ function finishIntro(onComplete) {
   const introEl = document.getElementById('intro-screen');
   if (introEl) {
     introEl.style.display = 'none';
+    introEl.style.opacity = '0';
+    introEl.style.pointerEvents = 'none';
   }
   markIntroSeen();
+  applyCameraPreset('ENTIRE');
   if (onComplete) onComplete();
 }
 
@@ -187,6 +207,7 @@ export function skipIntro(onComplete) {
     introTimeline = null;
   }
   skipCinematicFlyIn();
+  applyCameraPreset('ENTIRE');
   finishIntro(onComplete);
 }
 
@@ -197,7 +218,7 @@ export function replayIntro() {
   const introEl = document.getElementById('intro-screen');
   if (!introEl) return;
   startIntroSequence(() => {
-    // If user replayed from settings, no need to auto-start tour
+    // Replay complete
   });
 }
 
@@ -207,8 +228,8 @@ export function replayIntro() {
 export function initIntroControls(onComplete) {
   const skipBtn = document.getElementById('intro-skip-btn');
   if (skipBtn) {
-    skipBtn.addEventListener('click', () => {
+    skipBtn.onclick = () => {
       skipIntro(onComplete);
-    });
+    };
   }
 }
