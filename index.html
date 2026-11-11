@@ -4,6 +4,17 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MarketVerse — The Living Stock Market City</title>
+  <meta name="description" content="MarketVerse — The Living 3D Stock Market City & Financial Literacy Platform. Explore 36 companies, real-time market cap skyscrapers, and economic scenarios." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏛️</text></svg>" />
+  <!-- Open Graph / Social Sharing Metadata -->
+  <meta property="og:title" content="MarketVerse — The Living Stock Market City" />
+  <meta property="og:description" content="Explore a 3D stock market city where building height reflects company market capitalization. Live simulation, 10 sector districts, and financial education." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://3dmarket-bb-tc.vercel.app/" />
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="MarketVerse — The Living Stock Market City" />
+  <meta name="twitter:description" content="Explore a 3D stock market city where building height reflects company market capitalization." />
   <link rel="stylesheet" href="/src/styles/tokens.css" />
   <link rel="stylesheet" href="/src/styles/base.css" />
   <link rel="stylesheet" href="/src/styles/layout.css" />
@@ -138,14 +149,14 @@
             </div>
           </div>
           <select id="quick-event-select" style="display:none;" aria-hidden="true">
-            <option value="NONE">NONE</option>
-            <option value="RATE_HIKE">RATE_HIKE</option>
-            <option value="RATE_CUT">RATE_CUT</option>
-            <option value="OIL_SPIKE">OIL_SPIKE</option>
-            <option value="TECH_SELLOFF">TECH_SELLOFF</option>
-            <option value="STRONG_EARNINGS">STRONG_EARNINGS</option>
-            <option value="INR_DEPREC">INR_DEPREC</option>
-            <option value="RISK_OFF">RISK_OFF</option>
+            <option value="NONE">Baseline Market Session (No Active Shock)</option>
+            <option value="RATE_HIKE">Central Bank Interest-Rate Increase (+50 bps)</option>
+            <option value="RATE_CUT">Central Bank Interest-Rate Decrease (-50 bps)</option>
+            <option value="OIL_SPIKE">Crude Oil Price Surge (+18%)</option>
+            <option value="TECH_SELLOFF">Broad Technology-Sector Sell-Off</option>
+            <option value="STRONG_EARNINGS">Strong Corporate Earnings Season</option>
+            <option value="INR_DEPREC">Rupee Currency Depreciation vs USD</option>
+            <option value="RISK_OFF">Broad Market Risk-Off Rotation</option>
           </select>
           <div id="events-popover-list" class="popover-list"></div>
         </div>
@@ -194,14 +205,28 @@
       </div>
 
       <button id="edu-mode-btn" title="Switch Beginner vs. Pro Workspace Preset"><span id="edu-mode-label">Beginner</span></button>
-      <button id="sound-top-btn" title="Toggle Web Audio Sound Effects (Off by default)" aria-label="Toggle Sound">🔇</button>
-      <button id="alerts-top-btn" title="Educational Market Alerts">🔔 <span id="alert-count-badge" class="badge sim">0</span></button>
-      <button id="tour-top-btn" class="hide-tablet" title="Start 4-Step City Guide Tour">🎓</button>
-      <button id="screenshot-top-btn" class="hide-tablet" title="Export Watermarked City Screenshot">📷</button>
-      <button id="qa-top-btn" class="hide-tablet" title="Run Automated Engine & 18 Acceptance Tests">🧪</button>
-      <button id="shortcuts-top-btn" class="hide-tablet" title="Keyboard Shortcuts Help (?)">⌨</button>
-      <button id="settings-top-btn" title="Accessibility & Render Settings">⚙</button>
-      <button id="toggle-right-btn" title="Toggle Inspector Panel">▤</button>
+      <button id="sound-top-btn" title="Toggle Web Audio Sound Effects" aria-label="Toggle Sound">🔇 <span class="hide-tablet">Sound</span></button>
+      <button id="alerts-top-btn" title="Educational Market Alerts">🔔 <span class="hide-tablet">Alerts</span> <span id="alert-count-badge" class="badge sim">0</span></button>
+
+      <!-- Clean Tools & Utilities Popover Menu -->
+      <div class="popover-wrapper">
+        <button id="tools-popover-btn" aria-haspopup="true" aria-expanded="false" title="Developer, Educational & Media Tools">
+          🛠️ <span class="hide-tablet">Tools</span> ▾
+        </button>
+        <div id="tools-popover-menu" class="popover-menu" role="menu" style="display:none; width:220px; right:0;">
+          <div class="popover-header"><span>Tools & Help</span></div>
+          <div style="display:flex; flex-direction:column; gap:4px; padding:6px;">
+            <button id="tour-top-btn" style="text-align:left; width:100%;" title="Start 4-Step City Guide Tour">🎓 Onboarding Tour</button>
+            <button id="screenshot-top-btn" style="text-align:left; width:100%;" title="Export Watermarked City Screenshot">📷 Export Screenshot</button>
+            <button id="shortcuts-top-btn" style="text-align:left; width:100%;" title="Keyboard Shortcuts Help (?)">⌨ Keyboard Shortcuts</button>
+            <button id="qa-top-btn" style="text-align:left; width:100%;" title="Run Automated Engine & 18 Acceptance Tests">🧪 QA Test Suite</button>
+            <button id="credits-top-btn" style="text-align:left; width:100%;" title="Polyfork 3D Asset Credits (CC BY 4.0)">📜 Asset Credits</button>
+          </div>
+        </div>
+      </div>
+
+      <button id="settings-top-btn" title="Accessibility & Render Settings">⚙ <span class="hide-tablet">Settings</span></button>
+      <button id="toggle-right-btn" title="Toggle Inspector Panel">▤ <span class="hide-tablet">Panel</span></button>
     </div>
   </header>
 
@@ -255,10 +280,15 @@
       </button>
     </div>
 
-    <div style="border-top:1px solid var(--border-subtle); padding-top:8px;">
+    <div style="border-top:1px solid var(--border-subtle); padding-top:8px; display:flex; flex-direction:column; gap:4px;">
       <button id="collapse-icon-mode-btn" style="width:100%; font-size:var(--text-sm);" title="Switch Sidebar between Expanded and Icon-Only Mode">
         <span class="nav-icon">⇤</span><span class="nav-text">Icon-Only Sidebar</span>
       </button>
+      <div class="nav-legal-links" style="padding:6px 8px; font-size:11px; color:var(--text-muted); display:flex; flex-wrap:wrap; gap:6px;">
+        <a href="#credits" id="footer-credits-link" style="color:var(--text-secondary); text-decoration:none;">3D Credits</a> •
+        <a href="#privacy" id="footer-privacy-link" style="color:var(--text-secondary); text-decoration:none;">Privacy</a> •
+        <a href="#terms" id="footer-terms-link" style="color:var(--text-secondary); text-decoration:none;">Terms</a>
+      </div>
     </div>
   </nav>
 
@@ -272,7 +302,7 @@
         </div>
         <div class="card-value-row">
           <span class="card-main-val num" id="card-nifty-val">22,450.00</span>
-          <span class="badge pos num" id="card-nifty-chg">+0.00%</span>
+          <span class="badge neu num" id="card-nifty-chg">—</span>
         </div>
         <div class="card-sub-row">
           <span id="card-nifty-prev" class="num">Prev: 22,450.00</span>
@@ -287,7 +317,7 @@
         </div>
         <div class="card-value-row">
           <span class="card-main-val num" id="card-sensex-val">73,890.00</span>
-          <span class="badge pos num" id="card-sensex-chg">+0.00%</span>
+          <span class="badge neu num" id="card-sensex-chg">—</span>
         </div>
         <div class="card-sub-row">
           <span id="card-sensex-prev" class="num">Prev: 73,890.00</span>
@@ -301,8 +331,8 @@
           <button class="help-icon" data-concept="marketCap" title="Understand Market Capitalization" aria-label="Understand Market Capitalization">?</button>
         </div>
         <div class="card-value-row">
-          <span class="card-main-val num" id="card-mcap-val">₹0.00 L Cr</span>
-          <span class="badge pos num" id="card-mcap-chg">+0.00%</span>
+          <span class="card-main-val num" id="card-mcap-val">—</span>
+          <span class="badge neu num" id="card-mcap-chg">—</span>
         </div>
         <div class="card-sub-row">
           <span id="card-mcap-count">Listed Companies</span>
@@ -316,7 +346,7 @@
           <button class="help-icon" data-concept="volume" title="Understand Trading Volume" aria-label="Understand Trading Volume">?</button>
         </div>
         <div class="card-value-row">
-          <span class="card-main-val num" id="card-vol-val">0.00 Cr</span>
+          <span class="card-main-val num" id="card-vol-val">—</span>
           <span class="badge neu" id="card-mood-badge">SIDEWAYS</span>
         </div>
         <div class="card-sub-row">
@@ -344,8 +374,8 @@
           <span class="badge pos">≥ +2%</span>
         </div>
 
-        <!-- Live Performance Telemetry (FPS, Draw Calls, Triangles) -->
-        <div id="perf-telemetry-pill" class="num hide-tablet" style="font-size:11px; color:var(--text-muted);" title="Live WebGL Render Telemetry (FPS • Draw Calls • Triangles)">
+        <!-- Live Performance Telemetry (Hidden behind developer flag by default) -->
+        <div id="perf-telemetry-pill" class="num hide-tablet" style="display:none; font-size:11px; color:var(--text-muted);" title="Live WebGL Render Telemetry (FPS • Draw Calls • Triangles)">
           60 FPS • 0 draws • 0 tris
         </div>
       </div>

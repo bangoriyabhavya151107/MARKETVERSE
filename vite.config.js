@@ -31,6 +31,8 @@ function marketVerseResolverPlugin() {
     'src/world/exchange.js',
     'src/world/districts.js',
     'src/world/buildings.js',
+    'src/world/modelLoader.js',
+    'src/data/assets.json',
     'src/world/infrastructure.js',
     'src/world/learning.js',
     'src/world/instancing.js',

@@ -13,11 +13,11 @@
   touch-action: none;
 }
 
-/* WebGL Fallback Notice */
+/* WebGL Fallback Notice (Hidden by default unless WebGL fails) */
 .webgl-fallback {
   position: absolute;
   inset: 0;
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   background: radial-gradient(circle at center, #18232D 0%, #101820 100%);

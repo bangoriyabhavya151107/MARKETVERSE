@@ -10,6 +10,7 @@ import * as THREE from 'three';
 import { scene, interactiveMeshes } from './scene.js';
 import { createContactShadowMesh } from './lighting.js';
 import { registerWorldLabel } from './labels.js';
+import { getCachedModel } from './modelLoader.js';
 
 export let exchangeMonumentMat = null;
 let domeMat = null;
@@ -57,6 +58,15 @@ export function buildCentralExchangeComplex() {
   plaza.position.y = 0.3;
   plaza.receiveShadow = true;
   exGroup.add(plaza);
+
+  // Polyfork Classical Bank Portico at Southern Exchange Plaza Approach
+  const bankModel = getCachedModel('classical-bank-04954e');
+  if (bankModel) {
+    bankModel.scale.set(0.75, 0.75, 0.75);
+    bankModel.position.set(0, 0.6, 17.5);
+    bankModel.rotation.y = Math.PI;
+    exGroup.add(bankModel);
+  }
 
   const innerSteps = new THREE.Mesh(
     new THREE.CylinderGeometry(17.5, 19, 1.2, 32),

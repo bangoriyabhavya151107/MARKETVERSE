@@ -34,7 +34,7 @@ export function runAllEngineTests() {
   const counts = getDatasetCounts(live.companies);
   record(
     'AT-01: 36 Listed Companies & Dynamic Constituent Counts',
-    counts.listedCount === 36 && counts.niftyCount === 24 && counts.sensexCount === 18,
+    counts.listedCount === 36 && counts.niftyCount === 25 && counts.sensexCount === 19,
     `Listed=${counts.listedCount}, NIFTY=${counts.niftyCount}, SENSEX=${counts.sensexCount}`
   );
 

@@ -15,7 +15,16 @@ import { selectWorldObject, clearSelection } from '../controls/picking.js';
 import { applyCameraPreset } from '../controls/cameraRig.js';
 import { update3DCityFromState } from '../world/buildings.js';
 import { drawSparkline } from './charts.js';
-import { openConceptModal, openAlertsModal, openSettingsModal, openShortcutsModal, openQATestModal } from './modal.js';
+import {
+  openConceptModal,
+  openAlertsModal,
+  openSettingsModal,
+  openShortcutsModal,
+  openQATestModal,
+  openCreditsModal,
+  openPrivacyModal,
+  openTermsModal
+} from './modal.js';
 import { startOnboardingTour, startStoryMode, exportWatermarkedScreenshot, playUiSound } from './onboarding.js';
 import { switchLeftNavView } from './leftNav.js';
 import { showToast } from './toasts.js';
@@ -329,12 +338,15 @@ function setupPopovers() {
   const evMenu = document.getElementById('events-popover-menu');
   const scBtn = document.getElementById('scene-popover-btn');
   const scMenu = document.getElementById('scene-popover-menu');
+  const tlBtn = document.getElementById('tools-popover-btn');
+  const tlMenu = document.getElementById('tools-popover-menu');
 
   if (evBtn && evMenu) {
     evBtn.addEventListener('click', e => {
       e.stopPropagation();
       const open = evMenu.style.display === 'block';
       if (scMenu) scMenu.style.display = 'none';
+      if (tlMenu) tlMenu.style.display = 'none';
       if (!open) renderEventsPopoverList(store.getViewState());
       evMenu.style.display = open ? 'none' : 'block';
       evBtn.setAttribute('aria-expanded', String(!open));
@@ -346,8 +358,20 @@ function setupPopovers() {
       e.stopPropagation();
       const open = scMenu.style.display === 'block';
       if (evMenu) evMenu.style.display = 'none';
+      if (tlMenu) tlMenu.style.display = 'none';
       scMenu.style.display = open ? 'none' : 'block';
       scBtn.setAttribute('aria-expanded', String(!open));
+    });
+  }
+
+  if (tlBtn && tlMenu) {
+    tlBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      const open = tlMenu.style.display === 'block';
+      if (evMenu) evMenu.style.display = 'none';
+      if (scMenu) scMenu.style.display = 'none';
+      tlMenu.style.display = open ? 'none' : 'block';
+      tlBtn.setAttribute('aria-expanded', String(!open));
     });
   }
 
@@ -357,6 +381,9 @@ function setupPopovers() {
     }
     if (scMenu && !scMenu.contains(e.target) && e.target !== scBtn) {
       scMenu.style.display = 'none';
+    }
+    if (tlMenu && !tlMenu.contains(e.target) && e.target !== tlBtn) {
+      tlMenu.style.display = 'none';
     }
   });
 }
@@ -390,7 +417,7 @@ export function initTopBarEvents() {
     soundBtn.addEventListener('click', () => {
       const live = store.getLiveState();
       live.soundEnabled = !live.soundEnabled;
-      soundBtn.textContent = live.soundEnabled ? '🔊' : '🔇';
+      soundBtn.innerHTML = live.soundEnabled ? '🔊 <span class="hide-tablet">Sound</span>' : '🔇 <span class="hide-tablet">Sound</span>';
       soundBtn.classList.toggle('active', live.soundEnabled);
       if (live.soundEnabled) playUiSound('select');
       showToast(live.soundEnabled ? '🔊 Web Audio sound effects enabled.' : '🔇 Sound effects muted.');
@@ -401,19 +428,56 @@ export function initTopBarEvents() {
   if (storyBtn) storyBtn.addEventListener('click', startStoryMode);
 
   const qaBtn = document.getElementById('qa-top-btn');
-  if (qaBtn) qaBtn.addEventListener('click', openQATestModal);
+  if (qaBtn) qaBtn.addEventListener('click', () => {
+    const tlMenu = document.getElementById('tools-popover-menu');
+    if (tlMenu) tlMenu.style.display = 'none';
+    openQATestModal();
+  });
 
   document.getElementById('alerts-top-btn').addEventListener('click', openAlertsModal);
   document.getElementById('settings-top-btn').addEventListener('click', openSettingsModal);
 
   const tourBtn = document.getElementById('tour-top-btn');
-  if (tourBtn) tourBtn.addEventListener('click', startOnboardingTour);
+  if (tourBtn) tourBtn.addEventListener('click', () => {
+    const tlMenu = document.getElementById('tools-popover-menu');
+    if (tlMenu) tlMenu.style.display = 'none';
+    startOnboardingTour();
+  });
 
   const shotBtn = document.getElementById('screenshot-top-btn');
-  if (shotBtn) shotBtn.addEventListener('click', exportWatermarkedScreenshot);
+  if (shotBtn) shotBtn.addEventListener('click', () => {
+    const tlMenu = document.getElementById('tools-popover-menu');
+    if (tlMenu) tlMenu.style.display = 'none';
+    exportWatermarkedScreenshot();
+  });
 
   const kbBtn = document.getElementById('shortcuts-top-btn');
-  if (kbBtn) kbBtn.addEventListener('click', openShortcutsModal);
+  if (kbBtn) kbBtn.addEventListener('click', () => {
+    const tlMenu = document.getElementById('tools-popover-menu');
+    if (tlMenu) tlMenu.style.display = 'none';
+    openShortcutsModal();
+  });
+
+  const creditsBtn = document.getElementById('credits-top-btn');
+  if (creditsBtn) creditsBtn.addEventListener('click', () => {
+    const tlMenu = document.getElementById('tools-popover-menu');
+    if (tlMenu) tlMenu.style.display = 'none';
+    openCreditsModal();
+  });
+
+  // Footer Navigation Legal & Credit Links
+  document.getElementById('footer-credits-link')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    openCreditsModal();
+  });
+  document.getElementById('footer-privacy-link')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    openPrivacyModal();
+  });
+  document.getElementById('footer-terms-link')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    openTermsModal();
+  });
 
   const sceneThemeBtn = document.getElementById('scene-theme-toggle-btn');
   if (sceneThemeBtn) {

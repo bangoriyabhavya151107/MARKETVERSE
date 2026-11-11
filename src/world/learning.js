@@ -6,6 +6,7 @@ import { scene, interactiveMeshes } from './scene.js';
 import { LEARNING_LANDMARKS } from '../data/landmarks.js';
 import { createContactShadowMesh } from './lighting.js';
 import { registerWorldLabel } from './labels.js';
+import { getCachedModel } from './modelLoader.js';
 
 let pvvPriceBar = null;
 let pvvVolumeBar = null;
@@ -22,6 +23,14 @@ export function buildLearningDistrict() {
   pad.position.set(0, 0.25, 48);
   pad.receiveShadow = true;
   scene.add(pad);
+
+  // Polyfork Public School Building (Financial Literacy Academy)
+  const schoolModel = getCachedModel('public-school-19ade5');
+  if (schoolModel) {
+    schoolModel.scale.set(0.65, 0.65, 0.65);
+    schoolModel.position.set(0, 0.5, 59);
+    scene.add(schoolModel);
+  }
 
   const pedMat = new THREE.MeshLambertMaterial({ color: 0x2c3e50 });
 

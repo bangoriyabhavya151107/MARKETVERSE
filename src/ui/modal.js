@@ -8,6 +8,104 @@ import { checkEducationalAlerts } from '../engine/alerts.js';
 import { syncQualitySettings } from '../world/postfx.js';
 import { update3DCityFromState } from '../world/buildings.js';
 import { runAllEngineTests } from '../engine/__tests__/engine.test.js';
+import ASSETS_MANIFEST from '../data/assets.json';
+
+export function openCreditsModal() {
+  document.getElementById('modal-title').textContent = '📜 3D Asset Credits & Licenses';
+  const body = document.getElementById('modal-body');
+
+  body.innerHTML = `
+    <div class="edu-block">
+      <strong>License Information (CC BY 4.0)</strong>
+      <p style="margin-top:4px;">
+        All 3D low-poly models utilized in MarketVerse are provided by <a href="https://polyfork.dev" target="_blank" rel="noopener noreferrer" style="color:var(--accent); font-weight:600;">Polyfork</a> under the Creative Commons Attribution 4.0 International (CC BY 4.0) license.
+      </p>
+      <p style="margin-top:4px; font-style:italic; color:var(--text-secondary);">
+        Models were modified (scaled, recolored, merged) for real-time visualization, building height scaling by market capitalization, and performance optimization.
+      </p>
+    </div>
+
+    <div class="section-card" style="max-height:50vh; overflow-y:auto;">
+      <h4>Attribution Index (${ASSETS_MANIFEST.length} Models)</h4>
+      <table class="data-table" style="font-size:12px;">
+        <thead>
+          <tr>
+            <th>Asset Name</th>
+            <th>Attribution & License Line</th>
+            <th>Triangles</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${ASSETS_MANIFEST.map(
+            a => `
+            <tr>
+              <td style="font-weight:600;">${a.name}</td>
+              <td>
+                <span class="num">${a.name} by Polyfork (<a href="${a.sourceUrl}" target="_blank" rel="noopener noreferrer" style="color:var(--accent);">${a.sourceUrl}</a>), CC BY 4.0</span>
+              </td>
+              <td class="num">${a.tris.toLocaleString()}</td>
+            </tr>
+          `
+          ).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-card">
+      <h4>Usage Contract & Architecture Compliance</h4>
+      <p style="font-size:12px; color:var(--text-secondary);">
+        All models follow the New York City Kit (<code>nyc-city-kit-fbca88</code>) contract: 4m spatial grid snapping, 1 unit = 1 meter real-world coordinate system, 3m standardized floor pitch for non-stretching modular skyscraper extensions, and unified material palettes for low draw calls.
+      </p>
+    </div>
+  `;
+  document.getElementById('modal-backdrop').style.display = 'flex';
+}
+
+export function openPrivacyModal() {
+  document.getElementById('modal-title').textContent = '🔒 Privacy Policy';
+  const body = document.getElementById('modal-body');
+
+  body.innerHTML = `
+    <div class="edu-block">
+      <strong>Zero Tracking, 100% Client-Side Privacy</strong>
+      <p style="margin-top:4px;">
+        MarketVerse is committed to complete user privacy. All simulation state, what-if calculations, watchlists, and settings run entirely in your browser's local memory or localStorage.
+      </p>
+    </div>
+    <div class="section-card">
+      <h4>Key Privacy Guarantees</h4>
+      <ul style="padding-left:16px; font-size:12.5px; display:flex; flex-direction:column; gap:6px; color:var(--text-primary);">
+        <li><strong>No Cookies or Ad Trackers:</strong> We do not use advertising trackers, analytics tracking pixels, or third-party profiling cookies.</li>
+        <li><strong>Local Data Storage:</strong> Your custom watchlist and simulated portfolio are stored exclusively in your browser's <code>localStorage</code>.</li>
+        <li><strong>No Telemetry Sharing:</strong> Render statistics (FPS, draw calls, triangles) are calculated locally in WebGL memory and never transmitted externally.</li>
+      </ul>
+    </div>
+  `;
+  document.getElementById('modal-backdrop').style.display = 'flex';
+}
+
+export function openTermsModal() {
+  document.getElementById('modal-title').textContent = '⚖️ Terms of Service & Disclaimer';
+  const body = document.getElementById('modal-body');
+
+  body.innerHTML = `
+    <div class="edu-block warn">
+      <strong>Educational Financial Simulation — Not Investment Advice</strong>
+      <p style="margin-top:4px;">
+        MarketVerse is an interactive financial literacy and educational sandbox platform. All market indices (NIFTY 50, SENSEX), ticker symbols, company valuations, economic events, and financial statements depicted in simulation mode are completely fictional models.
+      </p>
+    </div>
+    <div class="section-card">
+      <h4>Permitted Use</h4>
+      <ul style="padding-left:16px; font-size:12.5px; display:flex; flex-direction:column; gap:6px; color:var(--text-primary);">
+        <li><strong>Educational Literacy:</strong> The software is provided for teaching macroeconomic mechanics, market-cap weighting, trading concepts, and 3D spatial visualization.</li>
+        <li><strong>Disclaimer of Warranty:</strong> The service is provided "as is" without warranty of any kind. None of the figures or events should be relied upon for actual capital allocation.</li>
+        <li><strong>Intellectual Property:</strong> 3D assets are credited to Polyfork under CC BY 4.0. Codebase is available under open educational terms.</li>
+      </ul>
+    </div>
+  `;
+  document.getElementById('modal-backdrop').style.display = 'flex';
+}
 
 export function openConceptModal(conceptKey) {
   const les = FINANCIAL_LESSONS[conceptKey];
@@ -218,12 +316,26 @@ export function openSettingsModal() {
           <span>Reduced Motion (Respects OS prefers-reduced-motion)</span>
           <input type="checkbox" id="reduced-motion-checkbox" ${viewState.reducedMotion ? 'checked' : ''} />
         </label>
+        <label style="display:flex; justify-content:space-between; align-items:center;">
+          <span>Developer Telemetry (FPS, Draw Calls, Triangles)</span>
+          <input type="checkbox" id="modal-debug-stats-checkbox" ${document.getElementById('perf-telemetry-pill')?.style.display === 'block' ? 'checked' : ''} />
+        </label>
         <div style="border-top:1px solid var(--border-subtle); padding-top:8px; display:flex; justify-content:space-between; align-items:center;">
           <span>Automated Engine & 18 Acceptance Tests</span>
           <button class="primary" id="modal-run-qa-btn">🧪 Run QA Suite</button>
         </div>
       </div>
     </div>
+
+    <div class="section-card">
+      <h4>Legal Information & 3D Asset Attribution</h4>
+      <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;">
+        <button id="modal-open-credits-btn" class="primary" style="font-size:12px;">📜 Polyfork Asset Credits (CC BY 4.0)</button>
+        <button id="modal-open-privacy-btn" style="font-size:12px;">🔒 Privacy Policy</button>
+        <button id="modal-open-terms-btn" style="font-size:12px;">⚖️ Terms of Service</button>
+      </div>
+    </div>
+
     <div class="edu-block">
       <strong>Accessibility Note:</strong> Positive and negative movements in MarketVerse always include explicit directional symbols (▲ +, ▼ -, •) alongside green/red/amber colors.
     </div>
@@ -278,6 +390,18 @@ export function openSettingsModal() {
     store.getLiveState().reducedMotion = e.target.checked;
     store.emit('settings');
   });
+
+  const debugBox = body.querySelector('#modal-debug-stats-checkbox');
+  if (debugBox) {
+    debugBox.addEventListener('change', e => {
+      const pill = document.getElementById('perf-telemetry-pill');
+      if (pill) pill.style.display = e.target.checked ? 'block' : 'none';
+    });
+  }
+
+  body.querySelector('#modal-open-credits-btn')?.addEventListener('click', openCreditsModal);
+  body.querySelector('#modal-open-privacy-btn')?.addEventListener('click', openPrivacyModal);
+  body.querySelector('#modal-open-terms-btn')?.addEventListener('click', openTermsModal);
 
   body.querySelector('#modal-run-qa-btn').addEventListener('click', openQATestModal);
 

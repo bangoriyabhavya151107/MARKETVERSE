@@ -25,12 +25,17 @@ import { mountInspectorPanel, updateInspectorPanelOnTick } from './ui/inspector/
 import { initBottomPanelEvents, mountBottomPanel, updateBottomPanelOnTick } from './ui/bottomPanel.js';
 import { initModalEvents, openQATestModal } from './ui/modal.js';
 import { initDynamicCountLabels, setLoadingProgress, finishLoadingAndStartIntro, playUiSound } from './ui/onboarding.js';
+import { preloadPolyforkModels } from './world/modelLoader.js';
 
-function boot() {
-  setLoadingProgress(15, 'Loading Seeded Indian Market Dataset...');
+async function boot() {
+  setLoadingProgress(10, 'Loading Seeded Indian Market Dataset...');
   store.loadPersistedState();
   initDataset();
   initDynamicCountLabels(store.getViewState().companies);
+
+  // Pre-populate summary counters before removal of loading screen to prevent placeholder flash
+  const initialView = store.getViewState();
+  updateTopBarAndSummaryCards(initialView);
 
   if (window.matchMedia) {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -40,7 +45,12 @@ function boot() {
     });
   }
 
-  setLoadingProgress(40, 'Constructing 3D Exchange & Sector Districts...');
+  setLoadingProgress(25, 'Downloading Polyfork Low-Poly 3D Assets (CC BY 4.0)...');
+  await preloadPolyforkModels((pct, name) => {
+    setLoadingProgress(25 + Math.round(pct * 25), `Loading ${name}...`);
+  });
+
+  setLoadingProgress(55, 'Constructing 3D Exchange & Sector Districts...');
   setLabelSelectHandler(selectWorldObject);
   initScene();
   buildLighting();
@@ -48,7 +58,7 @@ function boot() {
   buildCentralExchangeComplex();
   buildSectorDistricts();
 
-  setLoadingProgress(70, 'Building Company Towers & Learning Landmarks...');
+  setLoadingProgress(75, 'Building Company Towers & Learning Landmarks...');
   buildCompanyBuildings(store.getViewState().companies);
   buildInfrastructureDistrict();
   buildLearningDistrict();
@@ -60,7 +70,7 @@ function boot() {
   update3DCityFromState(store.getViewState());
   updateCameraImmediate();
 
-  setLoadingProgress(90, 'Wiring Interactive Controls & Analytics...');
+  setLoadingProgress(92, 'Wiring Interactive Controls & Analytics...');
   setupViewportControls();
   initTopBarEvents();
   initLeftNavEvents();
@@ -96,10 +106,10 @@ function boot() {
     updateBottomPanelOnTick(viewState);
   });
 
-  const initialView = store.getViewState();
-  updateTopBarAndSummaryCards(initialView);
-  mountInspectorPanel(initialView);
-  mountBottomPanel(initialView);
+  const viewAtMount = store.getViewState();
+  updateTopBarAndSummaryCards(viewAtMount);
+  mountInspectorPanel(viewAtMount);
+  mountBottomPanel(viewAtMount);
 
   finishLoadingAndStartIntro();
 
@@ -109,6 +119,9 @@ function boot() {
   }
 
   const perfPill = document.getElementById('perf-telemetry-pill');
+  if (perfPill && (window.location.search.includes('debug=1') || window.location.search.includes('dev=1'))) {
+    perfPill.style.display = 'block';
+  }
   let lastFrameTime = performance.now();
   let simAccumulator = 0;
   let telemetryAccumulator = 0;

@@ -30,9 +30,12 @@ class Store {
 
       // User Tools State
       compareIds: ['C01', 'C06', 'C11'],
-      watchlistIds: [],
-      portfolio: [],
-      alerts: [],
+      watchlistIds: ['C01', 'C06'],
+      portfolio: [{ id: 'C01', symbol: 'BHARATBK', shares: 50, buyPrice: 1640.0 }],
+      alerts: [
+        { id: 'A01', type: 'LARGE_MOVER', symbol: 'ALL', thresholdPct: 1.5, active: true },
+        { id: 'A02', type: 'SECTOR_DRIFT', symbol: 'BANKING', thresholdPct: 2.0, active: true }
+      ],
       triggeredAlerts: [],
       mcapThresholds: { largeCr: 100000, midCr: 40000 },
 

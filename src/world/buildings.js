@@ -11,6 +11,8 @@ import { createContactShadowMesh } from './lighting.js';
 import { registerWorldLabel, updateCompanyLabelAnchor } from './labels.js';
 import { updateExchangeMonumentAndTicker } from './exchange.js';
 import { updateSectorDistrictHighlights } from './districts.js';
+import { buildHybridBuilding, areModelsLoaded } from './modelLoader.js';
+import { store } from '../state/store.js';
 
 export const company3DMap = {};
 
@@ -369,6 +371,21 @@ export function buildCompanyBuildings(companies) {
     roofGroup.scale.set(width, 1, width);
     bGroup.add(roofGroup);
 
+    // Polyfork Hybrid Building Architecture (Preserves window proportions without vertical stretching)
+    const hybridGroup = buildHybridBuilding(
+      comp,
+      width,
+      h,
+      sec.hex,
+      store.getLiveState().graphicsQuality
+    );
+    if (hybridGroup) {
+      hybridGroup.position.y = 0.6;
+      bGroup.add(hybridGroup);
+      archGroup.visible = false;
+      roofGroup.visible = false;
+    }
+
     const hitGeo = new THREE.BoxGeometry(1.05, 1, 1.05);
     hitGeo.translate(0, 0.5, 0);
     const hitMesh = new THREE.Mesh(hitGeo, new THREE.MeshBasicMaterial({ visible: false }));
@@ -413,6 +430,7 @@ export function buildCompanyBuildings(companies) {
       plinthMesh,
       archGroup,
       roofGroup,
+      hybridGroup,
       hitMesh,
       bodyMat,
       accentMat,
@@ -522,6 +540,17 @@ export function update3DCityFromState(viewState) {
     b3d.accentMat.opacity = matchesExchange ? 1.0 : 0.25;
     b3d.accentMat.transparent = !matchesExchange;
 
+    // Switch between Polyfork Hybrid model and procedural fallback based on quality setting
+    const isLowQuality = viewState.graphicsQuality === 'LOW';
+    if (b3d.hybridGroup) {
+      b3d.hybridGroup.visible = !isLowQuality;
+      b3d.archGroup.visible = isLowQuality;
+      b3d.roofGroup.visible = isLowQuality;
+    } else {
+      b3d.archGroup.visible = true;
+      b3d.roofGroup.visible = true;
+    }
+
     updateCompanyLabelAnchor(
       c,
       b3d.currentHeight + b3d.currentLiftY,
@@ -557,6 +586,9 @@ export function updateBuildingPulses(liveCompanies, dt, viewState) {
       b3d.plinthMesh.scale.set(w, 1, w);
       b3d.archGroup.position.y = 0.6 + lift;
       b3d.archGroup.scale.set(w, h, w);
+      if (b3d.hybridGroup) {
+        b3d.hybridGroup.position.y = 0.6 + lift;
+      }
       b3d.roofGroup.position.y = h + 0.6 + lift;
       b3d.roofGroup.scale.set(w, 1, w);
       b3d.hitMesh.scale.set(w, h + 1.2 + lift, w);

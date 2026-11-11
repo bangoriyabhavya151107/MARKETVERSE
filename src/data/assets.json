@@ -1,0 +1,470 @@
+[
+  {
+    "id": "ambulance-van-29919a",
+    "name": "Ambulance Van",
+    "path": "/models/ambulance-van-29919a.glb",
+    "tris": 1656,
+    "size_m": {
+      "x": 2.25,
+      "y": 2.72,
+      "z": 6
+    },
+    "sourceUrl": "https://polyfork.dev/asset/ambulance-van-29919a"
+  },
+  {
+    "id": "art-deco-setback-tower-b3a788",
+    "name": "Art Deco Setback Tower",
+    "path": "/models/art-deco-setback-tower-b3a788.glb",
+    "tris": 3712,
+    "size_m": {
+      "x": 16,
+      "y": 60,
+      "z": 16
+    },
+    "sourceUrl": "https://polyfork.dev/asset/art-deco-setback-tower-b3a788"
+  },
+  {
+    "id": "auto-repair-garage-b91464",
+    "name": "Auto Repair Garage",
+    "path": "/models/auto-repair-garage-b91464.glb",
+    "tris": 2782,
+    "size_m": {
+      "x": 12,
+      "y": 7.2,
+      "z": 8
+    },
+    "sourceUrl": "https://polyfork.dev/asset/auto-repair-garage-b91464"
+  },
+  {
+    "id": "bike-rack-a1e7c3",
+    "name": "Bike Rack",
+    "path": "/models/bike-rack-a1e7c3.glb",
+    "tris": 480,
+    "size_m": {
+      "x": 3.59,
+      "y": 0.9,
+      "z": 0.19
+    },
+    "sourceUrl": "https://polyfork.dev/asset/bike-rack-a1e7c3"
+  },
+  {
+    "id": "brownstone-row-house-1b84fd",
+    "name": "Brownstone Row House",
+    "path": "/models/brownstone-row-house-1b84fd.glb",
+    "tris": 3050,
+    "size_m": {
+      "x": 8,
+      "y": 17.06,
+      "z": 8
+    },
+    "sourceUrl": "https://polyfork.dev/asset/brownstone-row-house-1b84fd"
+  },
+  {
+    "id": "bus-shelter-f786b4",
+    "name": "Bus Shelter",
+    "path": "/models/bus-shelter-f786b4.glb",
+    "tris": 308,
+    "size_m": {
+      "x": 4,
+      "y": 2.6,
+      "z": 1.9
+    },
+    "sourceUrl": "https://polyfork.dev/asset/bus-shelter-f786b4"
+  },
+  {
+    "id": "cast-iron-loft-b04b5a",
+    "name": "Cast Iron Loft",
+    "path": "/models/cast-iron-loft-b04b5a.glb",
+    "tris": 3212,
+    "size_m": {
+      "x": 12,
+      "y": 20.06,
+      "z": 8.95
+    },
+    "sourceUrl": "https://polyfork.dev/asset/cast-iron-loft-b04b5a"
+  },
+  {
+    "id": "city-bus-49fd97",
+    "name": "City Bus",
+    "path": "/models/city-bus-49fd97.glb",
+    "tris": 2008,
+    "size_m": {
+      "x": 2.18,
+      "y": 3.2,
+      "z": 11
+    },
+    "sourceUrl": "https://polyfork.dev/asset/city-bus-49fd97"
+  },
+  {
+    "id": "classical-bank-04954e",
+    "name": "Classical Bank",
+    "path": "/models/classical-bank-04954e.glb",
+    "tris": 2890,
+    "size_m": {
+      "x": 12,
+      "y": 10.2,
+      "z": 12
+    },
+    "sourceUrl": "https://polyfork.dev/asset/classical-bank-04954e"
+  },
+  {
+    "id": "commuter-381e7f",
+    "name": "Commuter",
+    "path": "/models/commuter-381e7f.glb",
+    "tris": 3801,
+    "size_m": {
+      "x": 2.03,
+      "y": 1.73,
+      "z": 0.49
+    },
+    "sourceUrl": "https://polyfork.dev/asset/commuter-381e7f"
+  },
+  {
+    "id": "compact-hatchback-386417",
+    "name": "Compact Hatchback",
+    "path": "/models/compact-hatchback-386417.glb",
+    "tris": 1876,
+    "size_m": {
+      "x": 1.97,
+      "y": 1.6,
+      "z": 4
+    },
+    "sourceUrl": "https://polyfork.dev/asset/compact-hatchback-386417"
+  },
+  {
+    "id": "corner-shop-5aec8c",
+    "name": "Corner Shop",
+    "path": "/models/corner-shop-5aec8c.glb",
+    "tris": 2887,
+    "size_m": {
+      "x": 8.85,
+      "y": 7,
+      "z": 8.85
+    },
+    "sourceUrl": "https://polyfork.dev/asset/corner-shop-5aec8c"
+  },
+  {
+    "id": "corner-tenement-92fb62",
+    "name": "Corner Tenement",
+    "path": "/models/corner-tenement-92fb62.glb",
+    "tris": 2842,
+    "size_m": {
+      "x": 8.61,
+      "y": 20.06,
+      "z": 13.2
+    },
+    "sourceUrl": "https://polyfork.dev/asset/corner-tenement-92fb62"
+  },
+  {
+    "id": "delivery-truck-a9537e",
+    "name": "Delivery Truck",
+    "path": "/models/delivery-truck-a9537e.glb",
+    "tris": 1528,
+    "size_m": {
+      "x": 2.62,
+      "y": 2.7,
+      "z": 6
+    },
+    "sourceUrl": "https://polyfork.dev/asset/delivery-truck-a9537e"
+  },
+  {
+    "id": "department-store-ffbd58",
+    "name": "Department Store",
+    "path": "/models/department-store-ffbd58.glb",
+    "tris": 3108,
+    "size_m": {
+      "x": 16,
+      "y": 23.06,
+      "z": 12.75
+    },
+    "sourceUrl": "https://polyfork.dev/asset/department-store-ffbd58"
+  },
+  {
+    "id": "doorman-3f2e09",
+    "name": "Doorman",
+    "path": "/models/doorman-3f2e09.glb",
+    "tris": 3399,
+    "size_m": {
+      "x": 1.69,
+      "y": 1.8,
+      "z": 0.37
+    },
+    "sourceUrl": "https://polyfork.dev/asset/doorman-3f2e09"
+  },
+  {
+    "id": "narrow-walk-up-41f10c",
+    "name": "Narrow Walk-Up",
+    "path": "/models/narrow-walk-up-41f10c.glb",
+    "tris": 2962,
+    "size_m": {
+      "x": 4,
+      "y": 13,
+      "z": 9.37
+    },
+    "sourceUrl": "https://polyfork.dev/asset/narrow-walk-up-41f10c"
+  },
+  {
+    "id": "office-tower-1538cc",
+    "name": "Office Tower",
+    "path": "/models/office-tower-1538cc.glb",
+    "tris": 2676,
+    "size_m": {
+      "x": 8,
+      "y": 32.06,
+      "z": 8
+    },
+    "sourceUrl": "https://polyfork.dev/asset/office-tower-1538cc"
+  },
+  {
+    "id": "one-storey-shop-row-83c958",
+    "name": "One-Storey Shop Row",
+    "path": "/models/one-storey-shop-row-83c958.glb",
+    "tris": 2410,
+    "size_m": {
+      "x": 12,
+      "y": 4.66,
+      "z": 8.92
+    },
+    "sourceUrl": "https://polyfork.dev/asset/one-storey-shop-row-83c958"
+  },
+  {
+    "id": "park-bench-dc8b62",
+    "name": "Park Bench",
+    "path": "/models/park-bench-dc8b62.glb",
+    "tris": 756,
+    "size_m": {
+      "x": 1.8,
+      "y": 0.94,
+      "z": 0.73
+    },
+    "sourceUrl": "https://polyfork.dev/asset/park-bench-dc8b62"
+  },
+  {
+    "id": "parking-garage-6e4f2c",
+    "name": "Parking Garage",
+    "path": "/models/parking-garage-6e4f2c.glb",
+    "tris": 2229,
+    "size_m": {
+      "x": 12,
+      "y": 17.06,
+      "z": 12
+    },
+    "sourceUrl": "https://polyfork.dev/asset/parking-garage-6e4f2c"
+  },
+  {
+    "id": "plaza-tile-23b48e",
+    "name": "Plaza Tile",
+    "path": "/models/plaza-tile-23b48e.glb",
+    "tris": 294,
+    "size_m": {
+      "x": 4,
+      "y": 0.05,
+      "z": 4
+    },
+    "sourceUrl": "https://polyfork.dev/asset/plaza-tile-23b48e"
+  },
+  {
+    "id": "postwar-apartment-slab-cee5f9",
+    "name": "Postwar Apartment Slab",
+    "path": "/models/postwar-apartment-slab-cee5f9.glb",
+    "tris": 3812,
+    "size_m": {
+      "x": 16,
+      "y": 50.06,
+      "z": 12
+    },
+    "sourceUrl": "https://polyfork.dev/asset/postwar-apartment-slab-cee5f9"
+  },
+  {
+    "id": "prewar-apartment-house-1081a6",
+    "name": "Prewar Apartment House",
+    "path": "/models/prewar-apartment-house-1081a6.glb",
+    "tris": 3996,
+    "size_m": {
+      "x": 16,
+      "y": 41.06,
+      "z": 12
+    },
+    "sourceUrl": "https://polyfork.dev/asset/prewar-apartment-house-1081a6"
+  },
+  {
+    "id": "public-school-19ade5",
+    "name": "Public School",
+    "path": "/models/public-school-19ade5.glb",
+    "tris": 3074,
+    "size_m": {
+      "x": 20,
+      "y": 13.2,
+      "z": 12
+    },
+    "sourceUrl": "https://polyfork.dev/asset/public-school-19ade5"
+  },
+  {
+    "id": "roof-bulkhead-0f0acc",
+    "name": "Roof Bulkhead",
+    "path": "/models/roof-bulkhead-0f0acc.glb",
+    "tris": 336,
+    "size_m": {
+      "x": 2.5,
+      "y": 2.89,
+      "z": 3.54
+    },
+    "sourceUrl": "https://polyfork.dev/asset/roof-bulkhead-0f0acc"
+  },
+  {
+    "id": "rooftop-ac-unit-6ccb3c",
+    "name": "Rooftop AC Unit",
+    "path": "/models/rooftop-ac-unit-6ccb3c.glb",
+    "tris": 640,
+    "size_m": {
+      "x": 1.5,
+      "y": 1.06,
+      "z": 1.3
+    },
+    "sourceUrl": "https://polyfork.dev/asset/rooftop-ac-unit-6ccb3c"
+  },
+  {
+    "id": "rooftop-billboard-48a23e",
+    "name": "Rooftop Billboard",
+    "path": "/models/rooftop-billboard-48a23e.glb",
+    "tris": 774,
+    "size_m": {
+      "x": 7.44,
+      "y": 5.77,
+      "z": 2.13
+    },
+    "sourceUrl": "https://polyfork.dev/asset/rooftop-billboard-48a23e"
+  },
+  {
+    "id": "rooftop-water-tower-b38362",
+    "name": "Rooftop Water Tower",
+    "path": "/models/rooftop-water-tower-b38362.glb",
+    "tris": 608,
+    "size_m": {
+      "x": 3.12,
+      "y": 5.06,
+      "z": 3.28
+    },
+    "sourceUrl": "https://polyfork.dev/asset/rooftop-water-tower-b38362"
+  },
+  {
+    "id": "shop-awning-f47171",
+    "name": "Shop Awning",
+    "path": "/models/shop-awning-f47171.glb",
+    "tris": 180,
+    "size_m": {
+      "x": 4,
+      "y": 1.27,
+      "z": 1
+    },
+    "sourceUrl": "https://polyfork.dev/asset/shop-awning-f47171"
+  },
+  {
+    "id": "shopper-d3208f",
+    "name": "Shopper",
+    "path": "/models/shopper-d3208f.glb",
+    "tris": 3516,
+    "size_m": {
+      "x": 2.48,
+      "y": 1.78,
+      "z": 0.73
+    },
+    "sourceUrl": "https://polyfork.dev/asset/shopper-d3208f"
+  },
+  {
+    "id": "sidewalk-tile-4dfa7b",
+    "name": "Sidewalk Tile",
+    "path": "/models/sidewalk-tile-4dfa7b.glb",
+    "tris": 284,
+    "size_m": {
+      "x": 4,
+      "y": 0.05,
+      "z": 4
+    },
+    "sourceUrl": "https://polyfork.dev/asset/sidewalk-tile-4dfa7b"
+  },
+  {
+    "id": "street-lamp-136745",
+    "name": "Street Lamp",
+    "path": "/models/street-lamp-136745.glb",
+    "tris": 344,
+    "size_m": {
+      "x": 2.56,
+      "y": 6,
+      "z": 0.9
+    },
+    "sourceUrl": "https://polyfork.dev/asset/street-lamp-136745"
+  },
+  {
+    "id": "street-tile-c7e3cf",
+    "name": "Street Tile",
+    "path": "/models/street-tile-c7e3cf.glb",
+    "tris": 188,
+    "size_m": {
+      "x": 8,
+      "y": 0.05,
+      "z": 8
+    },
+    "sourceUrl": "https://polyfork.dev/asset/street-tile-c7e3cf"
+  },
+  {
+    "id": "street-tree-0d33f3",
+    "name": "Street Tree",
+    "path": "/models/street-tree-0d33f3.glb",
+    "tris": 272,
+    "size_m": {
+      "x": 3.05,
+      "y": 6,
+      "z": 3.05
+    },
+    "sourceUrl": "https://polyfork.dev/asset/street-tree-0d33f3"
+  },
+  {
+    "id": "street-vendor-139de3",
+    "name": "Street Vendor",
+    "path": "/models/street-vendor-139de3.glb",
+    "tris": 3529,
+    "size_m": {
+      "x": 1.8,
+      "y": 1.72,
+      "z": 0.43
+    },
+    "sourceUrl": "https://polyfork.dev/asset/street-vendor-139de3"
+  },
+  {
+    "id": "town-car-56eeb6",
+    "name": "Town Car",
+    "path": "/models/town-car-56eeb6.glb",
+    "tris": 1770,
+    "size_m": {
+      "x": 1.98,
+      "y": 1.5,
+      "z": 5
+    },
+    "sourceUrl": "https://polyfork.dev/asset/town-car-56eeb6"
+  },
+  {
+    "id": "traffic-light-b217a2",
+    "name": "Traffic Light",
+    "path": "/models/traffic-light-b217a2.glb",
+    "tris": 714,
+    "size_m": {
+      "x": 2.68,
+      "y": 5.28,
+      "z": 0.72
+    },
+    "sourceUrl": "https://polyfork.dev/asset/traffic-light-b217a2"
+  },
+  {
+    "id": "yellow-cab-8df4a0",
+    "name": "Yellow Cab",
+    "path": "/models/yellow-cab-8df4a0.glb",
+    "tris": 1926,
+    "size_m": {
+      "x": 1.91,
+      "y": 1.66,
+      "z": 4.62
+    },
+    "sourceUrl": "https://polyfork.dev/asset/yellow-cab-8df4a0"
+  }
+]
